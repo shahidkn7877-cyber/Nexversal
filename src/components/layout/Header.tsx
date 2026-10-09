@@ -105,7 +105,7 @@ export function Header({}: HeaderProps = {}) {
       <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-3">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-brand-600 via-indigo-500 to-purple-600 text-white shadow-md shadow-brand-500/20">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-rose-500 via-brand-600 to-purple-600 text-white shadow-md shadow-rose-500/20">
               <Sparkles className="h-5 w-5" />
             </div>
             <div>

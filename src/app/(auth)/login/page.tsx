@@ -63,7 +63,7 @@ function LoginForm() {
         {/* Brand Header */}
         <div className="text-center space-y-2">
           <Link href="/" className="inline-flex items-center gap-2.5">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-brand-600 via-indigo-500 to-purple-600 text-white flex items-center justify-center shadow-lg shadow-brand-500/20">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-rose-500 via-brand-600 to-purple-600 text-white flex items-center justify-center shadow-lg shadow-rose-500/20">
               <Sparkles className="h-5 w-5" />
             </div>
             <span className="font-extrabold text-xl tracking-tight text-foreground">
