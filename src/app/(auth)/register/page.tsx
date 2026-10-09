@@ -77,7 +77,7 @@ export default function RegisterPage() {
               <Sparkles className="h-5 w-5" />
             </div>
             <span className="font-extrabold text-xl tracking-tight text-foreground">
-              AI SEO Optimizer
+              Nexversal
             </span>
           </Link>
           <p className="text-xs text-muted-foreground">

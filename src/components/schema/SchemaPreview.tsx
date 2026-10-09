@@ -33,10 +33,10 @@ export function SchemaPreview({
     },
     publisher: {
       "@type": "Organization",
-      name: "AI SEO Optimizer Pro",
+      name: "Nexversal",
       logo: {
         "@type": "ImageObject",
-        url: "https://yourwebsite.com/logo.png",
+        url: "https://nexversal.bond/logo.png",
       },
     },
     datePublished: "2026-09-28T00:00:00+00:00",

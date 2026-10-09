@@ -149,7 +149,7 @@ export async function safeFetchHtml(
     const response = await fetch(url, {
       signal: controller.signal,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; ModernSeoOptimizerBot/2.0; +https://yourwebsite.com/bot)',
+        'User-Agent': 'Mozilla/5.0 (compatible; NexversalBot/2.0; +https://nexversal.bond/bot)',
         Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9',
       },
@@ -220,7 +220,7 @@ export async function safeFetchResource(
     const response = await fetch(url, {
       signal: controller.signal,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; ModernSeoOptimizerBot/2.0; +https://yourwebsite.com/bot)',
+        'User-Agent': 'Mozilla/5.0 (compatible; NexversalBot/2.0; +https://nexversal.bond/bot)',
         Accept: 'text/plain,application/xml,text/xml,*/*;q=0.8',
       },
       redirect: 'follow',

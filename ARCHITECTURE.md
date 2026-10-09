@@ -1,4 +1,4 @@
-# AI SEO Optimizer Pro — Architecture Blueprint
+# Nexversal — Architecture Blueprint
 
 ## Architectural Overview & Philosophy
 

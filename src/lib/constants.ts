@@ -1,7 +1,9 @@
 import { NavigationItem } from '@/types/app';
 
-export const APP_NAME = 'AI SEO Optimizer & Technical Platform';
+export const APP_NAME = 'Nexversal';
+export const APP_DESCRIPTION = 'Professional, modern SEO platform for content auditing, keyword optimization, and search visibility.';
 export const APP_VERSION = '2.1.0';
+export const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://nexversal.bond';
 
 export const SEO_LIMITS = {
   title: {

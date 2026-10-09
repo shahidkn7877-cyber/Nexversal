@@ -111,14 +111,14 @@ export function Header({}: HeaderProps = {}) {
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-extrabold text-base tracking-tight text-foreground">
-                  AI SEO Optimizer
+                  Nexversal
                 </span>
                 <span className="rounded-md bg-brand-500/10 px-1.5 py-0.5 text-[10px] font-bold text-brand-600 dark:text-brand-400 border border-brand-500/20">
                   PRO
                 </span>
               </div>
               <p className="text-[11px] text-muted-foreground hidden sm:block">
-                Production Architecture · Secure Authentication
+                Professional SEO Platform · Content & Technical Suite
               </p>
             </div>
           </Link>

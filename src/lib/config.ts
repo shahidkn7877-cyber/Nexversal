@@ -12,7 +12,7 @@ export interface AppConfig {
 }
 
 export const config: AppConfig = {
-  appName: "AI SEO Optimizer",
+  appName: "Nexversal",
   version: "2.0.0-phase1",
   environment: (process.env.NODE_ENV as "development" | "production" | "test") || "development",
   features: {
