@@ -54,3 +54,4 @@ describe('Error Sanitizer Module', () => {
     expect(clean).toBe('Invalid email or password.');
   });
 });
+
