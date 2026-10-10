@@ -163,5 +163,36 @@ describe('PHASE 11 & PHASE 12 — Controlled Premium UI/UX & Homepage SEO Fixes'
       expect(pageContent).not.toContain('Trusted by 50,000+');
     });
   });
+
+  describe('6. SeoAuditService Evaluation on Rendered Production HTML', () => {
+    it('passes all heading and metadata checks when evaluated by SeoAuditService', async () => {
+      const { seoAuditService } = await import('@/services/audit.service');
+      const indexPath = path.resolve(process.cwd(), '.next/server/app/index.html');
+      if (fs.existsSync(indexPath)) {
+        const indexHtml = fs.readFileSync(indexPath, 'utf8');
+        const auditResult = seoAuditService.auditHtml(
+          indexHtml,
+          'https://nexversal.bond',
+          'seo audit'
+        );
+
+        const h1Check = auditResult.checks.find((c: any) => c.id === 'h1_heading');
+        expect(h1Check?.status).toBe('passed');
+
+        const hierarchyCheck = auditResult.checks.find((c: any) => c.id === 'heading_hierarchy');
+        expect(hierarchyCheck?.status).toBe('passed');
+
+        const h2Check = auditResult.checks.find((c: any) => c.id === 'h2_headings');
+        expect(h2Check?.status).toBe('passed');
+
+        const titleCheck = auditResult.checks.find((c: any) => c.id === 'title_tag');
+        expect(titleCheck?.status).toBe('passed');
+
+        const metaDescCheck = auditResult.checks.find((c: any) => c.id === 'meta_description');
+        expect(metaDescCheck?.status).toBe('passed');
+      }
+    });
+  });
 });
+
 
