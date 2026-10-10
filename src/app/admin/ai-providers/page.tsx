@@ -32,7 +32,7 @@ export default async function AdminAiProvidersPage() {
     <div className="space-y-6 p-6">
       <AdminHeader
         title="AI Providers Vault Management"
-        description="Protected administration of Gemini, OpenAI, Claude, and DeepSeek server adapters."
+        description="Protected administration of Groq, Ollama, Gemini, OpenAI, Claude, and DeepSeek server adapters."
       />
 
       <AdminProviderManager initialProviders={initialProviders} />
