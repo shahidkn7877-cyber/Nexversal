@@ -9,7 +9,7 @@ import {
   Sparkles,
   HelpCircle,
   Code,
-  Zap,
+  Feather,
 } from 'lucide-react';
 
 interface AnalyzerTabsProps {
@@ -28,6 +28,11 @@ export function AnalyzerTabs({
       key: 'seo' as AnalyzerTabKey,
       label: 'Checklist',
       icon: CheckSquare,
+    },
+    {
+      key: 'style_review' as AnalyzerTabKey,
+      label: 'Style Review',
+      icon: Feather,
     },
     {
       key: 'serp' as AnalyzerTabKey,

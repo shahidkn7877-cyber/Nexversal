@@ -6,6 +6,7 @@ import { EditorViewMode, AnalyzerTabKey } from '@/types/app';
 import { contentAnalyzerService } from '@/services/content-analyzer.service';
 import { editorActionsService } from '@/services/editor-actions.service';
 import { ContentAnalysisResult } from '@/types/analyzer';
+import { StyleReviewResult, StyleFinding } from '@/services/style-review.service';
 
 export interface PendingProposal {
   title: string;
@@ -27,7 +28,7 @@ export function useEditor(initialDoc?: Partial<SeoDocument>) {
     language: initialDoc?.language || 'en-US',
   });
 
-  const [viewMode, setViewMode] = useState<EditorViewMode>('editor');
+  const [viewMode, setViewMode] = useState<EditorViewMode>('visual');
   const [activeTab, setActiveTab] = useState<AnalyzerTabKey>('seo');
 
   const updateField = useCallback(
@@ -105,6 +106,17 @@ export function useEditor(initialDoc?: Partial<SeoDocument>) {
   const [pendingProposal, setPendingProposal] = useState<PendingProposal | null>(null);
   const [previousDoc, setPreviousDoc] = useState<SeoDocument | null>(null);
 
+  // AI & Async State
+  const [isHumanizing, setIsHumanizing] = useState(false);
+  const [humanizeError, setHumanizeError] = useState<string | null>(null);
+
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translationError, setTranslationError] = useState<string | null>(null);
+
+  const [styleReviewResult, setStyleReviewResult] = useState<StyleReviewResult | null>(null);
+  const [isStyleReviewing, setIsStyleReviewing] = useState(false);
+  const [rewritingFindingId, setRewritingFindingId] = useState<string | null>(null);
+
   const clearContent = useCallback(() => {
     setDoc({
       title: '',
@@ -117,6 +129,7 @@ export function useEditor(initialDoc?: Partial<SeoDocument>) {
       language: 'en-US',
     });
     setPendingProposal(null);
+    setStyleReviewResult(null);
   }, []);
 
   const triggerOneClickFix = useCallback(() => {
@@ -151,6 +164,7 @@ export function useEditor(initialDoc?: Partial<SeoDocument>) {
     });
   }, [doc.content, doc.focusKeyword]);
 
+  // Deterministic local humanizer (instant fallback)
   const triggerHumanizeTone = useCallback(() => {
     const result = editorActionsService.humanizeTone({
       content: doc.content,
@@ -164,6 +178,204 @@ export function useEditor(initialDoc?: Partial<SeoDocument>) {
       ),
     });
   }, [doc.content]);
+
+  // Real AI Humanize Tone (calls configured provider)
+  const triggerAiHumanizeTone = useCallback(async () => {
+    if (!doc.content.trim()) return;
+    setIsHumanizing(true);
+    setHumanizeError(null);
+
+    try {
+      const res = await fetch('/api/v1/content/improve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: doc.content,
+          action: 'humanize_tone',
+          focusKeyword: doc.focusKeyword || undefined,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success && data.data?.result?.improved) {
+        setPendingProposal({
+          title: 'AI Humanized Tone Proposal',
+          originalContent: doc.content,
+          proposedContent: data.data.result.improved,
+          changes: [
+            'Eliminated robotic phrasing and enhanced natural rhythm',
+            'Preserved all Markdown headings, links, and keywords',
+          ],
+        });
+      } else {
+        // Fall back to rule-based humanizer or report limitation
+        const fallback = editorActionsService.humanizeTone({ content: doc.content });
+        if (fallback.replacedCount > 0) {
+          setPendingProposal({
+            title: 'Humanize Tone (Rules Engine Proposal)',
+            originalContent: doc.content,
+            proposedContent: fallback.proposedContent,
+            changes: fallback.replacements.map(
+              (r) => `Replaced "${r.original}" with "${r.replacement}"`
+            ),
+          });
+        } else {
+          setHumanizeError(data.error?.message || 'AI improvements are currently unavailable.');
+        }
+      }
+    } catch {
+      setHumanizeError('AI improvements are currently unavailable.');
+    } finally {
+      setIsHumanizing(false);
+    }
+  }, [doc.content, doc.focusKeyword]);
+
+  // Translation Workflow
+  const triggerTranslation = useCallback(
+    async (targetLang: string, sourceLang: string = 'auto') => {
+      if (!doc.content.trim()) return;
+      setIsTranslating(true);
+      setTranslationError(null);
+
+      try {
+        const res = await fetch('/api/v1/content/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: doc.content,
+            targetLanguage: targetLang,
+            sourceLanguage: sourceLang !== 'auto' ? sourceLang : undefined,
+            focusKeyword: doc.focusKeyword || undefined,
+          }),
+        });
+
+        const data = await res.json();
+        if (data.success && data.data?.result?.improved) {
+          setPendingProposal({
+            title: `Article Translation (${targetLang}) Proposal`,
+            originalContent: doc.content,
+            proposedContent: data.data.result.improved,
+            changes: [
+              `Translated full article content into ${targetLang}`,
+              'Preserved headings, links, and formatting hierarchy',
+            ],
+            proposedDocFields: {
+              language: targetLang,
+            },
+          });
+        } else {
+          setTranslationError(data.error?.message || 'AI improvements are currently unavailable.');
+        }
+      } catch {
+        setTranslationError('AI improvements are currently unavailable.');
+      } finally {
+        setIsTranslating(false);
+      }
+    },
+    [doc.content, doc.focusKeyword]
+  );
+
+  // Writing Style Review Workflow
+  const triggerStyleReview = useCallback(async () => {
+    if (!doc.content.trim()) return;
+    setIsStyleReviewing(true);
+
+    try {
+      const res = await fetch('/api/v1/content/style-review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: doc.content }),
+      });
+
+      const data = await res.json();
+      if (data.success && data.data) {
+        setStyleReviewResult(data.data);
+        setActiveTab('style_review');
+      }
+    } catch {
+      // Ignored
+    } finally {
+      setIsStyleReviewing(false);
+    }
+  }, [doc.content]);
+
+  // Targeted Rewrite Loop for Specific Passage
+  const triggerTargetedRewrite = useCallback(
+    async (finding: StyleFinding) => {
+      setRewritingFindingId(finding.id);
+
+      try {
+        const res = await fetch('/api/v1/content/improve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: doc.content,
+            action: 'targeted_rewrite',
+            targetPassage: finding.passage,
+            styleFinding: finding.explanation,
+          }),
+        });
+
+        const data = await res.json();
+        if (data.success && data.data?.result?.improved) {
+          setStyleReviewResult((prev) => {
+            if (!prev) return null;
+            return {
+              ...prev,
+              findings: prev.findings.map((f) =>
+                f.id === finding.id
+                  ? {
+                      ...f,
+                      status: 'rewritten',
+                      rewrittenPassage: data.data.result.improved,
+                    }
+                  : f
+              ),
+            };
+          });
+        }
+      } catch {
+        // Ignored
+      } finally {
+        setRewritingFindingId(null);
+      }
+    },
+    [doc.content]
+  );
+
+  const acceptStyleFinding = useCallback(
+    (finding: StyleFinding) => {
+      if (!finding.rewrittenPassage) return;
+      setPreviousDoc({ ...doc });
+
+      // Replace passage in canonical content
+      const updatedContent = doc.content.replace(finding.passage, finding.rewrittenPassage);
+      setDoc((prev) => ({ ...prev, content: updatedContent }));
+
+      setStyleReviewResult((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          findings: prev.findings.map((f) =>
+            f.id === finding.id ? { ...f, status: 'accepted' } : f
+          ),
+        };
+      });
+    },
+    [doc]
+  );
+
+  const rejectStyleFinding = useCallback((finding: StyleFinding) => {
+    setStyleReviewResult((prev) => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        findings: prev.findings.map((f) =>
+          f.id === finding.id ? { ...f, status: 'rejected' } : f
+        ),
+      };
+    });
+  }, []);
 
   const triggerDialectAdapt = useCallback(
     (targetVariant: 'US' | 'UK') => {
@@ -218,6 +430,19 @@ export function useEditor(initialDoc?: Partial<SeoDocument>) {
     triggerOneClickFix,
     triggerAutoHeadings,
     triggerHumanizeTone,
+    triggerAiHumanizeTone,
+    isHumanizing,
+    humanizeError,
+    triggerTranslation,
+    isTranslating,
+    translationError,
+    triggerStyleReview,
+    isStyleReviewing,
+    styleReviewResult,
+    triggerTargetedRewrite,
+    acceptStyleFinding,
+    rejectStyleFinding,
+    rewritingFindingId,
     triggerDialectAdapt,
     acceptProposal,
     rejectProposal,

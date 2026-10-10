@@ -140,3 +140,4 @@ export function HeadingStructurePanel({ content }: HeadingStructurePanelProps) {
     </div>
   );
 }
+

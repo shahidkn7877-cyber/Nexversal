@@ -15,6 +15,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { SEO_LIMITS, SITE_URL } from "@/lib/constants";
+import { LanguageSelector } from "./LanguageSelector";
 
 interface KeywordInputProps {
   focusKeyword: string;
@@ -213,22 +214,13 @@ export function KeywordInput({
               <div className="flex items-center justify-between text-xs">
                 <label className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
                   <Globe2 className="h-3 w-3 text-slate-400" />
-                  <span>Target Language & Dialect</span>
+                  <span>Target Language</span>
                 </label>
               </div>
-              <select
+              <LanguageSelector
                 value={language}
-                onChange={(e) => onLanguageChange(e.target.value)}
-                className="flex h-8 w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-2.5 py-1 text-xs font-medium text-slate-800 dark:text-slate-200 focus:outline-none focus:border-blue-500"
-              >
-                <option value="en-US">🇺🇸 English (US)</option>
-                <option value="en-GB">🇬🇧 English (UK / British)</option>
-                <option value="en-CA">🇨🇦 English (Canada)</option>
-                <option value="en-AU">🇦🇺 English (Australia)</option>
-                <option value="es">🇪🇸 Spanish (Español)</option>
-                <option value="fr">🇫🇷 French (Français)</option>
-                <option value="de">🇩🇪 German (Deutsch)</option>
-              </select>
+                onChange={onLanguageChange}
+              />
             </div>
           </div>
         </div>

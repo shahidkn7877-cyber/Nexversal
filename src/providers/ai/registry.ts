@@ -3,6 +3,7 @@ import { GeminiProviderAdapter } from './adapters/gemini.adapter';
 import { OpenAiProviderAdapter } from './adapters/openai.adapter';
 import { ClaudeProviderAdapter } from './adapters/claude.adapter';
 import { DeepSeekProviderAdapter } from './adapters/deepseek.adapter';
+import { OllamaProviderAdapter } from './adapters/ollama.adapter';
 
 export class AiProviderRegistry {
   private adapters: Map<ProviderId, IAiProviderAdapter> = new Map();
@@ -12,6 +13,7 @@ export class AiProviderRegistry {
   }
 
   private registerDefaultAdapters() {
+    this.register(new OllamaProviderAdapter());
     this.register(new GeminiProviderAdapter());
     this.register(new OpenAiProviderAdapter());
     this.register(new ClaudeProviderAdapter());
@@ -43,8 +45,8 @@ export class AiProviderRegistry {
     if (available.length > 0) {
       return available[0];
     }
-    // Return gemini as default conceptual provider
-    return this.get('gemini');
+    // Return first registered provider as default
+    return this.get('ollama') || this.get('gemini');
   }
 }
 

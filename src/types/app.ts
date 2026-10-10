@@ -1,6 +1,6 @@
 export type AppTheme = 'light' | 'dark' | 'system';
 
-export type EditorViewMode = 'editor' | 'inspector' | 'diff' | 'preview';
+export type EditorViewMode = 'visual' | 'source' | 'preview' | 'editor' | 'inspector' | 'diff';
 
 export type AnalyzerTabKey =
   | 'seo'
@@ -9,7 +9,8 @@ export type AnalyzerTabKey =
   | 'patterns'
   | 'faq'
   | 'schema'
-  | 'export';
+  | 'export'
+  | 'style_review';
 
 export interface ProjectSummary {
   id: string;

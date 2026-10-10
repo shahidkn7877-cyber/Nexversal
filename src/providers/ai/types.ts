@@ -1,4 +1,4 @@
-export type ProviderId = 'gemini' | 'openai' | 'claude' | 'deepseek' | 'custom' | string;
+export type ProviderId = 'gemini' | 'openai' | 'claude' | 'deepseek' | 'ollama' | 'groq' | 'custom' | string;
 
 export type ProviderStatus = 'AVAILABLE' | 'NOT_CONFIGURED' | 'DISABLED' | 'ERROR';
 
@@ -11,7 +11,11 @@ export type AiCapability =
   | 'readability_enhancement'
   | 'heading_restructuring'
   | 'keyword_placement_suggestion'
-  | 'content_expansion';
+  | 'content_expansion'
+  | 'humanize_tone'
+  | 'translation'
+  | 'style_review'
+  | 'targeted_rewrite';
 
 export interface AiProviderMetadata {
   id: ProviderId;
@@ -34,7 +38,10 @@ export type ImprovementAction =
   | 'improve_readability'
   | 'suggest_keyword_placement'
   | 'improve_paragraph_clarity'
-  | 'generate_suggestions';
+  | 'generate_suggestions'
+  | 'humanize_tone'
+  | 'translate'
+  | 'targeted_rewrite';
 
 export interface ContentImprovementRequest {
   content: string;
@@ -44,6 +51,10 @@ export interface ContentImprovementRequest {
   targetAudience?: string;
   instructions?: string;
   preferredProviderId?: ProviderId;
+  targetLanguage?: string;
+  sourceLanguage?: string;
+  targetPassage?: string;
+  styleFinding?: string;
 }
 
 export interface ContentImprovementResponse {

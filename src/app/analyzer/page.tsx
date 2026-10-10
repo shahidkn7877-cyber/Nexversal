@@ -8,6 +8,8 @@ import { ContentEditor } from '@/components/analyzer/ContentEditor';
 import { AnalyzerTabs } from '@/components/analyzer/AnalyzerTabs';
 import { SeoChecklist } from '@/components/analyzer/SeoChecklist';
 import { HeadingStructurePanel } from '@/components/analyzer/HeadingStructurePanel';
+import { StyleReviewPanel } from '@/components/analyzer/StyleReviewPanel';
+import { TranslationModal } from '@/components/analyzer/TranslationModal';
 import { SerpPreview } from '@/components/analyzer/SerpPreview';
 import { AiPatternPanel } from '@/components/humanizer/AiPatternPanel';
 import { AiImprovementPanel } from '@/components/analyzer/AiImprovementPanel';
@@ -27,10 +29,8 @@ import {
   Languages,
   Undo2,
   Sparkles,
-  CheckCircle2,
-  AlertCircle,
-  HelpCircle,
   RefreshCw,
+  Feather,
 } from 'lucide-react';
 
 export default function AnalyzerPage() {
@@ -49,6 +49,19 @@ export default function AnalyzerPage() {
     triggerOneClickFix,
     triggerAutoHeadings,
     triggerHumanizeTone,
+    triggerAiHumanizeTone,
+    isHumanizing,
+    humanizeError,
+    triggerTranslation,
+    isTranslating,
+    translationError,
+    triggerStyleReview,
+    isStyleReviewing,
+    styleReviewResult,
+    triggerTargetedRewrite,
+    acceptStyleFinding,
+    rejectStyleFinding,
+    rewritingFindingId,
     triggerDialectAdapt,
     acceptProposal,
     rejectProposal,
@@ -57,6 +70,7 @@ export default function AnalyzerPage() {
 
   const [copied, setCopied] = useState(false);
   const [showDialectMenu, setShowDialectMenu] = useState(false);
+  const [showTranslateModal, setShowTranslateModal] = useState(false);
 
   const handleSyncSlug = () => {
     if (doc.focusKeyword.trim()) {
@@ -76,7 +90,7 @@ export default function AnalyzerPage() {
 
   const handleExportHtml = () => {
     const fullHtml = `<!DOCTYPE html>
-<html lang="en">
+<html lang="${doc.language || 'en'}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -125,7 +139,7 @@ export default function AnalyzerPage() {
         <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/80 dark:border-slate-800">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-              Content Analyzer
+              Content Analyzer &amp; Publisher
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
               Write, refine, and optimize your content for search.
@@ -201,7 +215,7 @@ export default function AnalyzerPage() {
               longParagraphsCount={analysisResult.longParagraphs.length}
             />
 
-            {/* Clean Article Writing Canvas */}
+            {/* Clean Article Writing Canvas with 3 Modes: Visual, Source, Preview */}
             <ContentEditor
               content={doc.content}
               onContentChange={(val) => updateField('content', val)}
@@ -212,13 +226,16 @@ export default function AnalyzerPage() {
               onTitleChange={(val) => updateField('title', val)}
               onOneClickFix={triggerOneClickFix}
               onAutoHeadings={triggerAutoHeadings}
-              onHumanizeTone={triggerHumanizeTone}
+              onHumanizeTone={triggerAiHumanizeTone}
               onDialectAdapt={triggerDialectAdapt}
               onUndo={undoLastAction}
               hasUndo={hasUndo}
               pendingProposal={pendingProposal}
               onAcceptProposal={acceptProposal}
               onRejectProposal={rejectProposal}
+              language={doc.language}
+              metaDescription={doc.metaDescription}
+              slug={doc.slug}
             />
           </div>
 
@@ -290,7 +307,7 @@ export default function AnalyzerPage() {
                     Quick Actions
                   </h3>
                   <p className="text-[11px] text-slate-500">
-                    Automated 1-click optimizations
+                    Automated optimization workflows
                   </p>
                 </div>
                 {hasUndo && (
@@ -321,17 +338,43 @@ export default function AnalyzerPage() {
                   <span>1-Click Fix</span>
                 </Button>
 
-                {/* Humanize Tone */}
+                {/* Real AI Humanize Tone */}
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={triggerHumanizeTone}
+                  onClick={triggerAiHumanizeTone}
+                  disabled={!doc.content.trim() || isHumanizing}
+                  className="text-xs font-semibold gap-1.5 h-9 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  title="Humanize tone with active AI provider"
+                >
+                  <Zap className={`h-3.5 w-3.5 text-amber-500 ${isHumanizing ? 'animate-spin' : ''}`} />
+                  <span>{isHumanizing ? 'Humanizing...' : 'Humanize Tone'}</span>
+                </Button>
+
+                {/* Translate Article Action */}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowTranslateModal(true)}
                   disabled={!doc.content.trim()}
                   className="text-xs font-semibold gap-1.5 h-9 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
-                  title="Clean robotic filler phrases and AI clichés"
+                  title="Translate article into another language"
                 >
-                  <Zap className="h-3.5 w-3.5 text-amber-500" />
-                  <span>Humanize Tone</span>
+                  <Languages className="h-3.5 w-3.5 text-blue-600" />
+                  <span>Translate</span>
+                </Button>
+
+                {/* Review Writing Style */}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={triggerStyleReview}
+                  disabled={!doc.content.trim() || isStyleReviewing}
+                  className="text-xs font-semibold gap-1.5 h-9 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  title="Analyze passages for formulaic patterns and clichés"
+                >
+                  <Feather className={`h-3.5 w-3.5 text-purple-600 ${isStyleReviewing ? 'animate-spin' : ''}`} />
+                  <span>{isStyleReviewing ? 'Scanning...' : 'Style Review'}</span>
                 </Button>
 
                 {/* Auto Headings */}
@@ -393,6 +436,13 @@ export default function AnalyzerPage() {
                   )}
                 </div>
               </div>
+
+              {/* Status Message for AI Provider Error if any */}
+              {humanizeError && (
+                <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/40 text-[11px] text-amber-800 dark:text-amber-300">
+                  {humanizeError}
+                </div>
+              )}
             </div>
 
             {/* 3. Heading Structure Inspector */}
@@ -411,6 +461,22 @@ export default function AnalyzerPage() {
                   rules={analysisResult.rules}
                   analysisResult={analysisResult}
                   isAnalyzed={true}
+                />
+              )}
+
+              {activeTab === 'style_review' && (
+                <StyleReviewPanel
+                  findings={styleReviewResult?.findings || []}
+                  summary={
+                    styleReviewResult?.summary ||
+                    'Click "Scan Style" above to analyze your article for formulaic passages and rhythm.'
+                  }
+                  isLoading={isStyleReviewing}
+                  onRefreshReview={triggerStyleReview}
+                  onRequestTargetedRewrite={triggerTargetedRewrite}
+                  onAcceptRewrite={acceptStyleFinding}
+                  onRejectRewrite={rejectStyleFinding}
+                  rewritingId={rewritingFindingId}
                 />
               )}
 
@@ -456,7 +522,7 @@ export default function AnalyzerPage() {
                   <CardHeader className="p-4 border-b border-slate-100 dark:border-slate-800">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                        Export & Publishing
+                        Export &amp; Publishing
                       </CardTitle>
                       <Badge variant="success">Score: {analysisResult.score}/100</Badge>
                     </div>
@@ -495,6 +561,19 @@ export default function AnalyzerPage() {
             </div>
           </div>
         </div>
+
+        {/* Translation Modal */}
+        <TranslationModal
+          isOpen={showTranslateModal}
+          onClose={() => setShowTranslateModal(false)}
+          onTranslate={async (sourceLang, targetLang) => {
+            await triggerTranslation(targetLang, sourceLang);
+            setShowTranslateModal(false);
+          }}
+          currentLanguage={doc.language}
+          isTranslating={isTranslating}
+          error={translationError}
+        />
       </div>
     </AppShell>
   );
