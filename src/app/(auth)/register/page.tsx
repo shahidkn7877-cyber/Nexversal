@@ -14,7 +14,7 @@ import { sanitizeRedirectUrl } from '@/lib/security/safe-redirect';
 function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const rawRedirect = searchParams.get('redirect') || '/';
+  const rawRedirect = searchParams.get('redirect') || '/dashboard';
   const redirectUrl = sanitizeRedirectUrl(rawRedirect);
 
   const [name, setName] = useState('');
@@ -211,7 +211,7 @@ function RegisterForm() {
                 href="/"
                 className="hover:text-foreground transition-colors"
               >
-                ← Back to Dashboard
+                ← Back to Home
               </Link>
             </CardFooter>
           </form>

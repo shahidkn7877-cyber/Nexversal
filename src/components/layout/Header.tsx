@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   Sparkles,
   Sun,
@@ -22,60 +22,20 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/lib/auth/auth-context";
 
-interface HeaderProps {}
-
-interface AuthUser {
-  id: string;
-  email: string;
-  name: string | null;
-  role: "USER" | "ADMIN";
+interface NavLinkItem {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  badge?: string;
 }
 
-export function Header({}: HeaderProps = {}) {
+export function Header() {
   const pathname = usePathname();
-  const router = useRouter();
+  const { user, loading: loadingAuth, logout: handleLogout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isDark, setIsDark] = useState(true);
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [loadingAuth, setLoadingAuth] = useState(true);
-
-  useEffect(() => {
-    let isMounted = true;
-    fetch("/api/v1/auth/me")
-      .then((res) => res.json())
-      .then((json) => {
-        if (isMounted) {
-          if (json.authenticated && json.data?.user) {
-            setUser(json.data.user);
-          } else {
-            setUser(null);
-          }
-          setLoadingAuth(false);
-        }
-      })
-      .catch(() => {
-        if (isMounted) {
-          setUser(null);
-          setLoadingAuth(false);
-        }
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [pathname]);
-
-  const handleLogout = async () => {
-    try {
-      await fetch("/api/v1/auth/logout", { method: "POST" });
-      setUser(null);
-      router.push("/login");
-      router.refresh();
-    } catch {
-      // ignore
-    }
-  };
 
   const toggleTheme = () => {
     setIsDark(!isDark);
@@ -84,15 +44,8 @@ export function Header({}: HeaderProps = {}) {
     }
   };
 
-  interface NavLinkItem {
-    href: string;
-    label: string;
-    icon: React.ComponentType<{ className?: string }>;
-    badge?: string;
-  }
-
-  const navLinks: NavLinkItem[] = [
-    { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  const authenticatedNavLinks: NavLinkItem[] = [
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/analyzer", label: "Content Analyzer", icon: FileSearch },
     { href: "/crawler", label: "Live SEO Audit", icon: Network },
     { href: "/keywords", label: "Keyword Explorer", icon: KeyRound },
@@ -103,6 +56,7 @@ export function Header({}: HeaderProps = {}) {
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+        {/* Nexversal Logo and Branding */}
         <div className="flex items-center gap-3">
           <Link href="/" className="flex items-center gap-2.5">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-rose-500 via-brand-600 to-purple-600 text-white shadow-md shadow-rose-500/20">
@@ -124,37 +78,51 @@ export function Header({}: HeaderProps = {}) {
           </Link>
         </div>
 
+        {/* Center Navigation: Authenticated Full Navigation vs Minimal Guest Header */}
         <nav className="hidden md:flex items-center gap-1">
-          {navLinks.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${
-                  isActive
-                    ? "bg-slate-100 text-foreground dark:bg-slate-800"
-                    : "text-muted-foreground hover:text-foreground hover:bg-slate-100/60 dark:hover:bg-slate-800/60"
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                <span>{item.label}</span>
-                {item.badge && (
-                  <Badge variant="muted" className="text-[9px] py-0 px-1.5 font-bold">
-                    {item.badge}
-                  </Badge>
-                )}
-              </Link>
-            );
-          })}
+          {user ? (
+            /* Authenticated Navigation */
+            authenticatedNavLinks.map((item) => {
+              const Icon = item.icon;
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${
+                    isActive
+                      ? "bg-slate-100 text-foreground dark:bg-slate-800"
+                      : "text-muted-foreground hover:text-foreground hover:bg-slate-100/60 dark:hover:bg-slate-800/60"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span>{item.label}</span>
+                  {item.badge && (
+                    <Badge variant="muted" className="text-[9px] py-0 px-1.5 font-bold">
+                      {item.badge}
+                    </Badge>
+                  )}
+                </Link>
+              );
+            })
+          ) : (
+            /* Minimal Guest Navigation: Only Dashboard option linking to sign-in */
+            <Link
+              href="/login?redirect=/dashboard"
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-slate-100/60 dark:hover:bg-slate-800/60 transition-colors"
+            >
+              <LayoutDashboard className="h-4 w-4" />
+              <span>Dashboard</span>
+            </Link>
+          )}
         </nav>
 
+        {/* Right Controls: User Profile / Sign In + Theme Toggle */}
         <div className="flex items-center gap-2.5">
-          {/* User Auth Controls */}
           {!loadingAuth && (
             <>
               {user ? (
+                /* Authenticated User Controls */
                 <div className="flex items-center gap-2">
                   {user.role === "ADMIN" && (
                     <Link href="/admin">
@@ -188,11 +156,12 @@ export function Header({}: HeaderProps = {}) {
                   </div>
                 </div>
               ) : (
+                /* Minimal Guest Sign In Button */
                 <Link href="/login">
                   <Button
                     size="sm"
                     variant="default"
-                    className="text-xs font-bold gap-1.5 h-8"
+                    className="text-xs font-bold gap-1.5 h-8 shadow-sm"
                   >
                     <LogIn className="h-3.5 w-3.5" />
                     <span>Sign In</span>
@@ -202,6 +171,7 @@ export function Header({}: HeaderProps = {}) {
             </>
           )}
 
+          {/* Theme Toggle */}
           <Button
             variant="ghost"
             size="icon"
@@ -217,6 +187,7 @@ export function Header({}: HeaderProps = {}) {
             )}
           </Button>
 
+          {/* Mobile Menu Trigger */}
           <Button
             variant="ghost"
             size="icon"
@@ -229,54 +200,56 @@ export function Header({}: HeaderProps = {}) {
         </div>
       </div>
 
+      {/* Mobile Drawer */}
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-border bg-card p-4 space-y-2">
-          {navLinks.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold ${
-                  isActive
-                    ? "bg-slate-100 dark:bg-slate-800 text-foreground font-bold"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Icon className="h-4 w-4" />
-                  <span>{item.label}</span>
-                </div>
-                {item.badge && (
-                  <Badge variant="muted" className="text-[10px]">
-                    {item.badge}
+          {user ? (
+            /* Authenticated Mobile Navigation */
+            <>
+              {authenticatedNavLinks.map((item) => {
+                const Icon = item.icon;
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold ${
+                      isActive
+                        ? "bg-slate-100 dark:bg-slate-800 text-foreground font-bold"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Icon className="h-4 w-4" />
+                      <span>{item.label}</span>
+                    </div>
+                    {item.badge && (
+                      <Badge variant="muted" className="text-[10px]">
+                        {item.badge}
+                      </Badge>
+                    )}
+                  </Link>
+                );
+              })}
+
+              {user.role === "ADMIN" && (
+                <Link
+                  href="/admin"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-brand-600 dark:text-brand-400 bg-brand-50/50 dark:bg-brand-950/30"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Shield className="h-4 w-4" />
+                    <span>Admin Dashboard</span>
+                  </div>
+                  <Badge variant="default" className="text-[10px]">
+                    ADMIN
                   </Badge>
-                )}
-              </Link>
-            );
-          })}
+                </Link>
+              )}
 
-          {user?.role === "ADMIN" && (
-            <Link
-              href="/admin"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-brand-600 dark:text-brand-400 bg-brand-50/50 dark:bg-brand-950/30"
-            >
-              <div className="flex items-center gap-2.5">
-                <Shield className="h-4 w-4" />
-                <span>Admin Dashboard</span>
-              </div>
-              <Badge variant="default" className="text-[10px]">
-                ADMIN
-              </Badge>
-            </Link>
-          )}
-
-          <div className="pt-2 border-t border-border">
-            {user ? (
-              <div className="flex items-center justify-between px-3 py-2">
+              <div className="pt-2 border-t border-border flex items-center justify-between px-3 py-2">
                 <div className="flex items-center gap-2">
                   <UserIcon className="h-4 w-4 text-muted-foreground" />
                   <span className="text-xs font-semibold text-foreground">
@@ -293,19 +266,35 @@ export function Header({}: HeaderProps = {}) {
                   Sign Out
                 </Button>
               </div>
-            ) : (
+            </>
+          ) : (
+            /* Minimal Guest Mobile Navigation */
+            <>
               <Link
-                href="/login"
+                href="/login?redirect=/dashboard"
                 onClick={() => setMobileMenuOpen(false)}
-                className="w-full block"
+                className="flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground"
               >
-                <Button size="sm" className="w-full text-xs font-bold gap-1.5">
-                  <LogIn className="h-3.5 w-3.5" />
-                  <span>Sign In</span>
-                </Button>
+                <div className="flex items-center gap-2.5">
+                  <LayoutDashboard className="h-4 w-4" />
+                  <span>Dashboard</span>
+                </div>
               </Link>
-            )}
-          </div>
+
+              <div className="pt-2 border-t border-border">
+                <Link
+                  href="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full block"
+                >
+                  <Button size="sm" className="w-full text-xs font-bold gap-1.5">
+                    <LogIn className="h-3.5 w-3.5" />
+                    <span>Sign In</span>
+                  </Button>
+                </Link>
+              </div>
+            </>
+          )}
         </div>
       )}
     </header>

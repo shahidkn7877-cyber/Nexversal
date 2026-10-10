@@ -6,7 +6,7 @@ import { ContentAnalyzerWorkspace } from '@/components/analyzer/ContentAnalyzerW
 
 export default function AnalyzerPage() {
   return (
-    <AppShell showSidebar={false}>
+    <AppShell showSidebar={true}>
       <ContentAnalyzerWorkspace showHeader={true} />
     </AppShell>
   );

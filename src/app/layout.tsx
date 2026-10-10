@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { APP_NAME, APP_DESCRIPTION, SITE_URL } from "@/lib/constants";
+import { AuthProvider } from "@/lib/auth/auth-context";
 import "./globals.css";
 
 function getMetadataBase(): URL {
@@ -43,7 +44,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className="min-h-screen bg-background font-sans antialiased text-foreground selection:bg-brand-500 selection:text-white">
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

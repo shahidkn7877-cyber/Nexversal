@@ -17,7 +17,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   const primaryItems = [
-    { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/analyzer', label: 'Content Analyzer', icon: FileSearch },
     { href: '/crawler', label: 'Live SEO Audit', icon: Network },
     { href: '/keywords', label: 'Keyword Research', icon: KeyRound },
