@@ -3,6 +3,7 @@ import { requireUser } from '@/lib/auth/user-guard';
 import { keywordResearchSchema } from '@/lib/validation/keyword.schema';
 import { keywordService } from '@/services/keyword.service';
 import { checkKeywordRateLimit } from '@/lib/security/keyword-rate-limit';
+import { sanitizeApiError } from '@/lib/security/error-sanitizer';
 
 export async function POST(req: NextRequest) {
   try {
@@ -139,16 +140,16 @@ export async function POST(req: NextRequest) {
       data: response,
     });
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : 'Unexpected keyword research failure.';
+    const sanitized = sanitizeApiError(err, 'keywords');
     return NextResponse.json(
       {
         success: false,
         error: {
-          code: 'PROVIDER_ERROR',
-          message: errorMsg,
+          code: sanitized.code,
+          message: sanitized.message,
         },
       },
-      { status: 500 }
+      { status: sanitized.status }
     );
   }
 }

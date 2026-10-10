@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auditRepository } from '@/repositories/audit.repository';
 import { requireUser } from '@/lib/auth/user-guard';
+import { sanitizeApiError } from '@/lib/security/error-sanitizer';
 
 export async function GET(req: NextRequest) {
   try {
@@ -27,15 +28,16 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (err: unknown) {
+    const sanitized = sanitizeApiError(err, 'audit');
     return NextResponse.json(
       {
         success: false,
         error: {
-          code: 'AUDIT_HISTORY_ERROR',
-          message: err instanceof Error ? err.message : 'Failed to retrieve audit history.',
+          code: sanitized.code,
+          message: sanitized.message,
         },
       },
-      { status: 500 }
+      { status: sanitized.status }
     );
   }
 }

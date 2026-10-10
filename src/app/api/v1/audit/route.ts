@@ -5,6 +5,7 @@ import { auditRepository } from '@/repositories/audit.repository';
 import { activityService } from '@/services/activity/activity.service';
 import { getUserIdFromRequest, DEFAULT_USER_ID } from '@/lib/auth/user-session';
 import { getCurrentUser } from '@/lib/auth/user-guard';
+import { sanitizeApiError } from '@/lib/security/error-sanitizer';
 
 export async function POST(req: NextRequest) {
   try {
@@ -75,16 +76,16 @@ export async function POST(req: NextRequest) {
       data: auditResult,
     });
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : 'An unexpected error occurred during audit execution.';
+    const sanitized = sanitizeApiError(err, 'audit');
     return NextResponse.json(
       {
         success: false,
         error: {
-          code: 'AUDIT_EXECUTION_ERROR',
-          message: errorMsg,
+          code: sanitized.code,
+          message: sanitized.message,
         },
       },
-      { status: 500 }
+      { status: sanitized.status }
     );
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireUser } from '@/lib/auth/user-guard';
 import { keywordResearchRepository } from '@/repositories/keyword-research.repository';
+import { sanitizeApiError } from '@/lib/security/error-sanitizer';
 
 export async function GET(req: NextRequest) {
   try {
@@ -24,16 +25,16 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : 'Failed to retrieve keyword research history.';
+    const sanitized = sanitizeApiError(err, 'keywords');
     return NextResponse.json(
       {
         success: false,
         error: {
-          code: 'HISTORY_FETCH_ERROR',
-          message: errorMsg,
+          code: sanitized.code,
+          message: sanitized.message,
         },
       },
-      { status: 500 }
+      { status: sanitized.status }
     );
   }
 }

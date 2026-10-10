@@ -3,6 +3,7 @@ import { contentAnalyzeSchema } from '@/lib/validation/content.schema';
 import { contentAnalyzerService } from '@/services/content-analyzer.service';
 import { activityService } from '@/services/activity/activity.service';
 import { getUserIdFromRequest } from '@/lib/auth/user-session';
+import { sanitizeApiError } from '@/lib/security/error-sanitizer';
 
 export async function POST(req: NextRequest) {
   try {
@@ -87,16 +88,16 @@ export async function POST(req: NextRequest) {
       data: result,
     });
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : 'Content analysis failed unexpectedly.';
+    const sanitized = sanitizeApiError(err, 'content');
     return NextResponse.json(
       {
         success: false,
         error: {
-          code: 'ANALYSIS_ERROR',
-          message: errorMsg,
+          code: sanitized.code,
+          message: sanitized.message,
         },
       },
-      { status: 500 }
+      { status: sanitized.status }
     );
   }
 }

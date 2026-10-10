@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Sparkles, Lock, Mail, User, AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
+import { sanitizeClientMessage } from '@/lib/security/error-sanitizer';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -54,7 +55,7 @@ export default function RegisterPage() {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        setError(data.error?.message || 'Registration failed. Please try again.');
+        setError(sanitizeClientMessage(data.error?.message, 'register'));
         setLoading(false);
         return;
       }
@@ -62,7 +63,7 @@ export default function RegisterPage() {
       router.push('/');
       router.refresh();
     } catch {
-      setError('A connection error occurred. Please try again.');
+      setError('Registration service is temporarily unavailable. Please try again shortly.');
       setLoading(false);
     }
   };

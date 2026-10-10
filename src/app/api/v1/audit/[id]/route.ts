@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auditRepository } from '@/repositories/audit.repository';
 import { requireUser } from '@/lib/auth/user-guard';
+import { sanitizeApiError } from '@/lib/security/error-sanitizer';
 
 export async function GET(
   req: NextRequest,
@@ -33,15 +34,16 @@ export async function GET(
       data: audit,
     });
   } catch (err: unknown) {
+    const sanitized = sanitizeApiError(err, 'audit');
     return NextResponse.json(
       {
         success: false,
         error: {
-          code: 'AUDIT_FETCH_ERROR',
-          message: err instanceof Error ? err.message : 'Failed to retrieve audit.',
+          code: sanitized.code,
+          message: sanitized.message,
         },
       },
-      { status: 500 }
+      { status: sanitized.status }
     );
   }
 }
@@ -77,15 +79,16 @@ export async function DELETE(
       message: 'Audit successfully deleted.',
     });
   } catch (err: unknown) {
+    const sanitized = sanitizeApiError(err, 'audit');
     return NextResponse.json(
       {
         success: false,
         error: {
-          code: 'AUDIT_DELETE_ERROR',
-          message: err instanceof Error ? err.message : 'Failed to delete audit.',
+          code: sanitized.code,
+          message: sanitized.message,
         },
       },
-      { status: 500 }
+      { status: sanitized.status }
     );
   }
 }

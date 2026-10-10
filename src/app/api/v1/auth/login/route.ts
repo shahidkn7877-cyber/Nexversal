@@ -7,6 +7,8 @@ import { ADMIN_COOKIE_NAME, getAdminSecret } from '@/lib/auth/admin-guard';
 import { activityService } from '@/services/activity/activity.service';
 import { adminBootstrapService } from '@/services/auth/admin-bootstrap.service';
 import { getClientIp, checkLoginRateLimit } from '@/lib/security/auth-rate-limit';
+import { isDatabaseConfigured } from '@/lib/db';
+import { sanitizeApiError } from '@/lib/security/error-sanitizer';
 
 export async function POST(req: NextRequest) {
   try {
@@ -84,6 +86,19 @@ export async function POST(req: NextRequest) {
 
     const { email, password } = parseResult.data;
     const normalizedEmail = email.toLowerCase().trim();
+
+    if (!isDatabaseConfigured()) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: 'SERVICE_UNAVAILABLE',
+            message: 'Authentication service is temporarily unavailable. Please try again in a few moments.',
+          },
+        },
+        { status: 503 }
+      );
+    }
 
     // Check if configured ADMIN user needs bootstrapping before authentication
     const configuredAdminEmail = process.env.ADMIN_EMAIL?.toLowerCase().trim();
@@ -164,16 +179,16 @@ export async function POST(req: NextRequest) {
 
     return response;
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : 'Login failed due to a server error.';
+    const sanitized = sanitizeApiError(err, 'auth');
     return NextResponse.json(
       {
         success: false,
         error: {
-          code: 'LOGIN_ERROR',
-          message: errorMsg,
+          code: sanitized.code,
+          message: sanitized.message,
         },
       },
-      { status: 500 }
+      { status: sanitized.status }
     );
   }
 }

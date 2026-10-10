@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Sparkles, Lock, Mail, AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
+import { sanitizeClientMessage } from '@/lib/security/error-sanitizer';
 
 function LoginForm() {
   const router = useRouter();
@@ -40,7 +41,7 @@ function LoginForm() {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        setError(data.error?.message || 'Invalid email or password.');
+        setError(sanitizeClientMessage(data.error?.message, 'auth'));
         setLoading(false);
         return;
       }
@@ -52,7 +53,7 @@ function LoginForm() {
       }
       router.refresh();
     } catch {
-      setError('A connection error occurred. Please try again.');
+      setError('Authentication service is temporarily unavailable. Please try again shortly.');
       setLoading(false);
     }
   };

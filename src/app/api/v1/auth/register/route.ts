@@ -6,6 +6,8 @@ import { createSession, SESSION_COOKIE_NAME, SESSION_DURATION_DAYS } from '@/lib
 import { ADMIN_COOKIE_NAME, getAdminSecret } from '@/lib/auth/admin-guard';
 import { activityService } from '@/services/activity/activity.service';
 import { getClientIp, checkRegisterRateLimit } from '@/lib/security/auth-rate-limit';
+import { isDatabaseConfigured } from '@/lib/db';
+import { sanitizeApiError } from '@/lib/security/error-sanitizer';
 
 export async function POST(req: NextRequest) {
   try {
@@ -64,6 +66,19 @@ export async function POST(req: NextRequest) {
 
     const { email, password, name } = parseResult.data;
     const normalizedEmail = email.toLowerCase().trim();
+
+    if (!isDatabaseConfigured()) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: 'SERVICE_UNAVAILABLE',
+            message: 'Registration service is temporarily unavailable. Please try again in a few moments.',
+          },
+        },
+        { status: 503 }
+      );
+    }
 
     // Check if user already exists
     const existingUser = await userRepository.findByEmail(normalizedEmail);
@@ -142,16 +157,16 @@ export async function POST(req: NextRequest) {
 
     return response;
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : 'Registration failed due to a server error.';
+    const sanitized = sanitizeApiError(err, 'register');
     return NextResponse.json(
       {
         success: false,
         error: {
-          code: 'REGISTRATION_ERROR',
-          message: errorMsg,
+          code: sanitized.code,
+          message: sanitized.message,
         },
       },
-      { status: 500 }
+      { status: sanitized.status }
     );
   }
 }

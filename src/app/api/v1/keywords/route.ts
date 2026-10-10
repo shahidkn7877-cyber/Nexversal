@@ -3,6 +3,7 @@ import { getUserIdFromRequest } from '@/lib/auth/user-session';
 import { NextRequest, NextResponse } from 'next/server';
 import { keywordQuerySchema } from '@/lib/validation/keyword.schema';
 import { keywordService } from '@/services/keyword.service';
+import { sanitizeApiError } from '@/lib/security/error-sanitizer';
 
 export async function GET(req: NextRequest) {
   try {
@@ -73,17 +74,17 @@ export async function GET(req: NextRequest) {
       data,
     });
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : 'Keyword research provider error.';
+    const sanitized = sanitizeApiError(err, 'keywords');
     return NextResponse.json(
       {
         success: false,
-        code: 'KEYWORD_SERVICE_ERROR',
+        code: sanitized.code,
         error: {
-          code: 'KEYWORD_SERVICE_ERROR',
-          message: errorMsg,
+          code: sanitized.code,
+          message: sanitized.message,
         },
       },
-      { status: 500 }
+      { status: sanitized.status }
     );
   }
 }
@@ -159,17 +160,17 @@ export async function POST(req: NextRequest) {
       data,
     });
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : 'Keyword research failed unexpectedly.';
+    const sanitized = sanitizeApiError(err, 'keywords');
     return NextResponse.json(
       {
         success: false,
-        code: 'KEYWORD_SERVICE_ERROR',
+        code: sanitized.code,
         error: {
-          code: 'KEYWORD_SERVICE_ERROR',
-          message: errorMsg,
+          code: sanitized.code,
+          message: sanitized.message,
         },
       },
-      { status: 500 }
+      { status: sanitized.status }
     );
   }
 }
