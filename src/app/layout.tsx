@@ -2,8 +2,16 @@ import type { Metadata } from "next";
 import { APP_NAME, APP_DESCRIPTION, SITE_URL } from "@/lib/constants";
 import "./globals.css";
 
+function getMetadataBase(): URL {
+  try {
+    return new URL(SITE_URL);
+  } catch {
+    return new URL('https://nexversal.bond');
+  }
+}
+
 export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
+  metadataBase: getMetadataBase(),
   title: {
     default: `${APP_NAME} — Professional SEO SaaS Platform`,
     template: `%s | ${APP_NAME}`,
