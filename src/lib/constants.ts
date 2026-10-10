@@ -1,7 +1,7 @@
 import { NavigationItem } from '@/types/app';
 
 export const APP_NAME = 'Nexversal';
-export const APP_DESCRIPTION = 'Professional, modern SEO platform for content auditing, keyword optimization, and search visibility.';
+export const APP_DESCRIPTION = 'Audit web pages for technical issues, optimize article headings and readability, research search keywords, and export SEO reports with Nexversal.';
 export const APP_VERSION = '2.1.0';
 function getSafeSiteUrl(): string {
   const fallback = 'https://nexversal.bond';

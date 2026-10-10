@@ -43,9 +43,9 @@ export function SeoScoreCard({
           </div>
 
           <div className="space-y-2">
-            <h4 className="text-sm font-bold text-foreground">
+            <p className="text-sm font-bold text-foreground">
               {hasScore ? `Current Score: ${score}/100` : statusText}
-            </h4>
+            </p>
             <p className="text-xs text-muted-foreground leading-relaxed">
               {hasScore
                 ? "On-page elements analyzed against technical search guidelines."

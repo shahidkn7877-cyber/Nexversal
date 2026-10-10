@@ -168,7 +168,7 @@ export default function KeywordsPage() {
         {/* Search Card */}
         <Card className="border-border bg-card">
           <CardHeader className="p-5 border-b border-border">
-            <CardTitle className="text-sm font-bold uppercase tracking-wider text-foreground">
+            <CardTitle as="h2" className="text-sm font-bold uppercase tracking-wider text-foreground">
               Search Target Keywords
             </CardTitle>
             <CardDescription className="text-xs text-muted-foreground">

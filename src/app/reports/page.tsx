@@ -115,7 +115,7 @@ export default function ReportsPage() {
           <CardHeader className="p-5 border-b border-border">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-sm font-bold uppercase tracking-wider text-foreground">
+                <CardTitle as="h2" className="text-sm font-bold uppercase tracking-wider text-foreground">
                   Available Audit Exports
                 </CardTitle>
                 <CardDescription className="text-xs">

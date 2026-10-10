@@ -98,7 +98,7 @@ export default function CrawlerPage() {
         {/* Audit Form Card */}
         <Card className="border-border bg-card shadow-sm">
           <CardHeader className="p-5 border-b border-border">
-            <CardTitle className="text-sm font-bold uppercase tracking-wider text-foreground">
+            <CardTitle as="h2" className="text-sm font-bold uppercase tracking-wider text-foreground">
               Audit Any Webpage URL
             </CardTitle>
             <CardDescription className="text-xs">

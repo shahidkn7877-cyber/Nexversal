@@ -89,7 +89,7 @@ export default function RegisterPage() {
         <Card className="border-border bg-card shadow-xl">
           <CardHeader className="p-6 pb-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-bold text-foreground">
+              <CardTitle as="h1" className="text-lg font-bold text-foreground">
                 Create Account
               </CardTitle>
               <Badge variant="outline" className="text-[10px] font-mono">

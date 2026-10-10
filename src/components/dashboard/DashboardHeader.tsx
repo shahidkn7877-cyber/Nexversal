@@ -9,8 +9,8 @@ interface DashboardHeaderProps {
 }
 
 export function DashboardHeader({
-  title = "SEO Command Center",
-  description = "Monitor your site visibility, audit content readability, and track on-page optimization.",
+  title = "Nexversal — SEO & Content Optimization Platform",
+  description = "Unified workspace to audit live web pages, refine article structure and readability, explore keyword search intent, and generate client-ready SEO reports.",
 }: DashboardHeaderProps) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-border">

@@ -161,7 +161,7 @@ export default function SettingsPage() {
             <CardHeader className="p-5 border-b border-border">
               <div className="flex items-center gap-2">
                 <Globe className="h-4 w-4 text-brand-600 dark:text-brand-400" />
-                <CardTitle className="text-sm font-bold uppercase tracking-wider text-foreground">
+                <CardTitle as="h2" className="text-sm font-bold uppercase tracking-wider text-foreground">
                   Localization & Editor Defaults
                 </CardTitle>
               </div>
@@ -249,7 +249,7 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4 text-brand-600 dark:text-brand-400" />
-                  <CardTitle className="text-sm font-bold uppercase tracking-wider text-foreground">
+                  <CardTitle as="h2" className="text-sm font-bold uppercase tracking-wider text-foreground">
                     Account Profile
                   </CardTitle>
                 </div>

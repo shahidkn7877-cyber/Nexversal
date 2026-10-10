@@ -13,7 +13,7 @@ function getMetadataBase(): URL {
 export const metadata: Metadata = {
   metadataBase: getMetadataBase(),
   title: {
-    default: `${APP_NAME} — Professional SEO SaaS Platform`,
+    default: `Professional SEO Audit & Content Optimization | ${APP_NAME}`,
     template: `%s | ${APP_NAME}`,
   },
   description: APP_DESCRIPTION,
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     canonical: "./",
   },
   openGraph: {
-    title: `${APP_NAME} — Professional SEO SaaS Platform`,
+    title: `Professional SEO Audit & Content Optimization | ${APP_NAME}`,
     description: APP_DESCRIPTION,
     url: SITE_URL,
     siteName: APP_NAME,
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: `${APP_NAME} — Professional SEO SaaS Platform`,
+    title: `Professional SEO Audit & Content Optimization | ${APP_NAME}`,
     description: APP_DESCRIPTION,
   },
 };
