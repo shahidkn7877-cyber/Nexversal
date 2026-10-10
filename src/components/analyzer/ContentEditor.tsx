@@ -184,9 +184,9 @@ export function ContentEditor({
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
               <div>
-                <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                <div className="text-xs font-bold text-slate-900 dark:text-slate-100">
                   {pendingProposal.title}
-                </h4>
+                </div>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
                   Review proposed revisions before applying to your draft
                 </p>
@@ -302,10 +302,10 @@ export function ContentEditor({
         {/* Headings Inspector Mode */}
         {viewMode === 'inspector' && (
           <div className="p-6 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+            <div className="flex items-center justify-between pb-3 border-slate-100 dark:border-slate-800">
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                 Document Headings Hierarchy
-              </h4>
+              </div>
               <div className="flex items-center gap-1.5 font-bold">
                 <Badge
                   variant={h1Count === 1 ? 'success' : h1Count > 1 ? 'warning' : 'danger'}
@@ -364,9 +364,9 @@ export function ContentEditor({
         {viewMode === 'diff' && (
           <div className="p-6 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                 Side-by-Side Revision Diff Viewer
-              </h4>
+              </div>
               <Badge variant="muted">Comparator</Badge>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

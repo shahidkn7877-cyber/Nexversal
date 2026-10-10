@@ -1,17 +1,21 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Sparkles, Lock, Mail, User, AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
 import { sanitizeClientMessage } from '@/lib/security/error-sanitizer';
+import { sanitizeRedirectUrl } from '@/lib/security/safe-redirect';
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const rawRedirect = searchParams.get('redirect') || '/';
+  const redirectUrl = sanitizeRedirectUrl(rawRedirect);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -60,7 +64,8 @@ export default function RegisterPage() {
         return;
       }
 
-      router.push('/');
+      const safeDestination = sanitizeRedirectUrl(redirectUrl, data.data?.user?.role);
+      router.push(safeDestination);
       router.refresh();
     } catch {
       setError('Registration service is temporarily unavailable. Please try again shortly.');
@@ -196,7 +201,7 @@ export default function RegisterPage() {
               <div>
                 Already have an account?{' '}
                 <Link
-                  href="/login"
+                  href={redirectUrl !== '/' ? `/login?redirect=${encodeURIComponent(redirectUrl)}` : '/login'}
                   className="font-bold text-brand-600 dark:text-brand-400 hover:underline"
                 >
                   Sign In
@@ -213,5 +218,19 @@ export default function RegisterPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-950">
+          <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
+        </div>
+      }
+    >
+      <RegisterForm />
+    </Suspense>
   );
 }

@@ -6,6 +6,7 @@ import { activityService } from '@/services/activity/activity.service';
 import { getUserIdFromRequest, DEFAULT_USER_ID } from '@/lib/auth/user-session';
 import { getCurrentUser } from '@/lib/auth/user-guard';
 import { sanitizeApiError } from '@/lib/security/error-sanitizer';
+import { createAuditContinuationToken } from '@/lib/security/audit-continuation';
 
 export async function POST(req: NextRequest) {
   try {
@@ -49,6 +50,8 @@ export async function POST(req: NextRequest) {
     auditResult.userId = userId;
     await auditRepository.saveAsync(auditResult);
 
+    const continuationToken = !user ? createAuditContinuationToken(auditResult.id) : undefined;
+
     let host = auditResult.url;
     try {
       host = new URL(auditResult.url).hostname;
@@ -73,7 +76,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: auditResult,
+      data: {
+        ...auditResult,
+        continuationToken,
+      },
     });
   } catch (err: unknown) {
     const sanitized = sanitizeApiError(err, 'audit');

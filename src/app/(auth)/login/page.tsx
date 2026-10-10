@@ -8,12 +8,14 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Sparkles, Lock, Mail, AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
+import { sanitizeRedirectUrl } from '@/lib/security/safe-redirect';
 import { sanitizeClientMessage } from '@/lib/security/error-sanitizer';
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectUrl = searchParams.get('redirect') || '/';
+  const rawRedirect = searchParams.get('redirect') || '/';
+  const redirectUrl = sanitizeRedirectUrl(rawRedirect);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -46,11 +48,8 @@ function LoginForm() {
         return;
       }
 
-      if (data.data?.user?.role === 'ADMIN' && redirectUrl.startsWith('/admin')) {
-        router.push(redirectUrl);
-      } else {
-        router.push(redirectUrl);
-      }
+      const safeDestination = sanitizeRedirectUrl(redirectUrl, data.data?.user?.role);
+      router.push(safeDestination);
       router.refresh();
     } catch {
       setError('Authentication service is temporarily unavailable. Please try again shortly.');
@@ -157,7 +156,7 @@ function LoginForm() {
               <div>
                 Don&apos;t have an account?{' '}
                 <Link
-                  href="/register"
+                  href={redirectUrl !== '/' ? `/register?redirect=${encodeURIComponent(redirectUrl)}` : '/register'}
                   className="font-bold text-brand-600 dark:text-brand-400 hover:underline"
                 >
                   Create Account

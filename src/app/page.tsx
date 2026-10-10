@@ -3,17 +3,13 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { AppShell } from '@/components/layout/AppShell';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
-import { SeoScoreCard } from '@/components/dashboard/SeoScoreCard';
-import { StatsCard } from '@/components/dashboard/StatsCard';
-import { IssueSummary } from '@/components/dashboard/IssueSummary';
+import { ContentAnalyzerWorkspace } from '@/components/analyzer/ContentAnalyzerWorkspace';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { auditRepository } from '@/repositories/audit.repository';
-import { APP_NAME, APP_DESCRIPTION, SITE_URL } from '@/lib/constants';
+import { APP_NAME, APP_DESCRIPTION } from '@/lib/constants';
 import {
   FileText,
-  Target,
   Network,
   ArrowRight,
   Sparkles,
@@ -23,6 +19,9 @@ import {
   ShieldCheck,
   Search,
   BookOpen,
+  Zap,
+  Globe,
+  Lock,
 } from 'lucide-react';
 
 export const metadata: Metadata = {
@@ -45,83 +44,50 @@ export const metadata: Metadata = {
   },
 };
 
-export default function DashboardPage() {
-  const latestAudit = auditRepository.getLatest();
-
+export default function HomePage() {
   return (
     <AppShell showSidebar={true}>
       <div className="space-y-8">
         {/* Primary Page Header with Single H1 */}
         <DashboardHeader />
 
-        {/* Section 1: Real-Time Metrics & Overview */}
-        <section aria-labelledby="section-metrics" className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 id="section-metrics" className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-brand-500" />
-              <span>Workspace Overview and Real-Time Metrics</span>
+        {/* Section 1: Content Analyzer Primary Hero Workspace */}
+        <section aria-labelledby="section-analyzer" className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <h2
+              id="section-analyzer"
+              className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2"
+            >
+              <FileText className="h-4 w-4 text-brand-500" />
+              <span>Article Writing &amp; Workspace Overview</span>
             </h2>
-            <span className="text-xs text-muted-foreground font-medium">Updated live</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground font-medium">
+                Live Editorial Mode
+              </span>
+              <Badge variant="outline" className="text-[10px]">
+                Primary Workspace
+              </Badge>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatsCard
-              title="Active Articles"
-              value="0"
-              subtitle="Start drafting in Analyzer"
-              icon={FileText}
-            />
-            <StatsCard
-              title="Focus Keywords"
-              value="0"
-              subtitle="Track focus keywords"
-              icon={Target}
-            />
-            <StatsCard
-              title="Latest Audit Health"
-              value={latestAudit ? `${latestAudit.score}/100` : 'Not Audited'}
-              subtitle={latestAudit ? 'Live URL Health Checked' : 'Run URL Audit'}
-              icon={Network}
-              badge={latestAudit && latestAudit.score >= 80 ? 'Healthy' : latestAudit ? 'Needs Review' : undefined}
-            />
-            <StatsCard
-              title="Keyword Intent"
-              value="N/A"
-              subtitle="Explore in Keyword Research"
-              icon={KeyRound}
-            />
-          </div>
+          {/* Full Interactive Content Analyzer Experience */}
+          <ContentAnalyzerWorkspace showHeader={false} />
         </section>
 
-        {/* Section 2: Technical SEO Health & Factors */}
-        <section aria-labelledby="section-health" className="space-y-4">
-          <h2 id="section-health" className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-            <span>Technical SEO Audit Health and Scoring</span>
-          </h2>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <SeoScoreCard
-              score={latestAudit ? latestAudit.score : null}
-              statusText={latestAudit ? 'Evaluated against 18 SEO factors' : 'No audits performed yet'}
-            />
-            <IssueSummary
-              criticalCount={latestAudit ? latestAudit.criticalCount : 0}
-              warningCount={latestAudit ? latestAudit.warningCount : 0}
-              infoCount={0}
-              passedCount={latestAudit ? latestAudit.passedCount : 0}
-            />
-          </div>
-        </section>
-
-        {/* Section 3: Core SEO & Content Tools */}
+        {/* Section 2: Integrated SEO and Content Optimization Tools */}
         <section aria-labelledby="section-tools" className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 id="section-tools" className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+            <h2
+              id="section-tools"
+              className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2"
+            >
               <Search className="h-4 w-4 text-brand-500" />
               <span>Integrated SEO and Content Optimization Tools</span>
             </h2>
-            <span className="text-xs text-muted-foreground font-medium">4 Core Suites</span>
+            <span className="text-xs text-muted-foreground font-medium">
+              4 Core Suites
+            </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -131,7 +97,9 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-brand-600 dark:text-brand-400 font-bold text-sm">
                     <FileText className="h-4 w-4" />
-                    <h3 className="text-sm font-bold text-foreground">Content SEO Analyzer</h3>
+                    <h3 className="text-sm font-bold text-foreground">
+                      Content SEO Analyzer
+                    </h3>
                   </div>
                   <Badge variant="outline" className="text-[10px]">
                     Editor Suite
@@ -157,7 +125,9 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 font-bold text-sm">
                     <Network className="h-4 w-4" />
-                    <h3 className="text-sm font-bold text-foreground">Live SEO URL Audit</h3>
+                    <h3 className="text-sm font-bold text-foreground">
+                      Live SEO URL Audit
+                    </h3>
                   </div>
                   <Badge variant="success" className="text-[10px]">
                     Functional
@@ -183,7 +153,9 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
                     <KeyRound className="h-4 w-4" />
-                    <h3 className="text-sm font-bold text-foreground">Keyword Research</h3>
+                    <h3 className="text-sm font-bold text-foreground">
+                      Keyword Research
+                    </h3>
                   </div>
                   <Badge variant="info" className="text-[10px]">
                     Intent Engine
@@ -209,7 +181,9 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-sky-600 dark:text-sky-400 font-bold text-sm">
                     <BarChart3 className="h-4 w-4" />
-                    <h3 className="text-sm font-bold text-foreground">Audit Reports</h3>
+                    <h3 className="text-sm font-bold text-foreground">
+                      Audit Reports
+                    </h3>
                   </div>
                   <Badge variant="outline" className="text-[10px]">
                     Export Suite
@@ -231,9 +205,90 @@ export default function DashboardPage() {
           </div>
         </section>
 
+        {/* Section 3: Technical SEO Audit Health and Publishing Workflow */}
+        <section aria-labelledby="section-workflow" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2
+              id="section-workflow"
+              className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2"
+            >
+              <Sparkles className="h-4 w-4 text-brand-500" />
+              <span>Technical SEO Audit Health &amp; Publishing Workflow</span>
+            </h2>
+            <span className="text-xs text-muted-foreground font-medium">
+              5 Steps
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+            <Card className="p-4 border-border bg-card/60 backdrop-blur space-y-2">
+              <div className="flex items-center gap-2 text-brand-600 dark:text-brand-400 font-semibold text-xs">
+                <FileText className="h-3.5 w-3.5" />
+                <h3 className="text-xs font-bold text-foreground">
+                  1. Write Article
+                </h3>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Draft directly in Visual, Markdown Source, or Preview mode with live word counts.
+              </p>
+            </Card>
+
+            <Card className="p-4 border-border bg-card/60 backdrop-blur space-y-2">
+              <div className="flex items-center gap-2 text-brand-600 dark:text-brand-400 font-semibold text-xs">
+                <Zap className="h-3.5 w-3.5" />
+                <h3 className="text-xs font-bold text-foreground">
+                  2. Live Analysis
+                </h3>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Instant score calculation checking 15 on-page heuristics, keyword density, and headings.
+              </p>
+            </Card>
+
+            <Card className="p-4 border-border bg-card/60 backdrop-blur space-y-2">
+              <div className="flex items-center gap-2 text-brand-600 dark:text-brand-400 font-semibold text-xs">
+                <Sparkles className="h-3.5 w-3.5" />
+                <h3 className="text-xs font-bold text-foreground">
+                  3. Polish &amp; Humanize
+                </h3>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Refine with 1-click SEO fix, style rhythm analysis, dialect adaptation, and AI tone polish.
+              </p>
+            </Card>
+
+            <Card className="p-4 border-border bg-card/60 backdrop-blur space-y-2">
+              <div className="flex items-center gap-2 text-brand-600 dark:text-brand-400 font-semibold text-xs">
+                <Globe className="h-3.5 w-3.5" />
+                <h3 className="text-xs font-bold text-foreground">
+                  4. Audit Live URL
+                </h3>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Deep crawl any webpage DOM against 18 technical factors with zero SSRF vulnerability.
+              </p>
+            </Card>
+
+            <Card className="p-4 border-border bg-card/60 backdrop-blur space-y-2">
+              <div className="flex items-center gap-2 text-brand-600 dark:text-brand-400 font-semibold text-xs">
+                <Lock className="h-3.5 w-3.5" />
+                <h3 className="text-xs font-bold text-foreground">
+                  5. Secure Download
+                </h3>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Sign in to link and export standalone styled HTML reports or developer JSON payloads.
+              </p>
+            </Card>
+          </div>
+        </section>
+
         {/* Section 4: Architecture & Verification Standards */}
         <section aria-labelledby="section-standards" className="space-y-4">
-          <h2 id="section-standards" className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+          <h2
+            id="section-standards"
+            className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2"
+          >
             <ShieldCheck className="h-4 w-4 text-brand-500" />
             <span>Platform Capabilities and Verification Standards</span>
           </h2>
@@ -242,7 +297,9 @@ export default function DashboardPage() {
             <Card className="p-4 border-border bg-card/60 backdrop-blur space-y-2">
               <div className="flex items-center gap-2 text-brand-600 dark:text-brand-400 font-semibold text-xs">
                 <CheckCircle2 className="h-3.5 w-3.5" />
-                <h3 className="text-xs font-bold text-foreground">18-Factor Technical Audit Engine</h3>
+                <h3 className="text-xs font-bold text-foreground">
+                  18-Factor Technical Audit Engine
+                </h3>
               </div>
               <p className="text-[11px] text-muted-foreground leading-relaxed">
                 Deterministic evaluation of HTTPS protocols, canonical URLs, meta descriptions (120-160 chars), title tags (30-65 chars), and robots directives with zero fabricated metrics.
@@ -252,7 +309,9 @@ export default function DashboardPage() {
             <Card className="p-4 border-border bg-card/60 backdrop-blur space-y-2">
               <div className="flex items-center gap-2 text-brand-600 dark:text-brand-400 font-semibold text-xs">
                 <BookOpen className="h-3.5 w-3.5" />
-                <h3 className="text-xs font-bold text-foreground">15-Rule On-Page Content Heuristics</h3>
+                <h3 className="text-xs font-bold text-foreground">
+                  15-Rule On-Page Content Heuristics
+                </h3>
               </div>
               <p className="text-[11px] text-muted-foreground leading-relaxed">
                 Analyzes heading structure (H1-H3), focus keyword density (0.8%-1.8%), readability scores, and SERP snippet previews based on established search ranking guidelines.
@@ -262,7 +321,9 @@ export default function DashboardPage() {
             <Card className="p-4 border-border bg-card/60 backdrop-blur space-y-2">
               <div className="flex items-center gap-2 text-brand-600 dark:text-brand-400 font-semibold text-xs">
                 <ShieldCheck className="h-3.5 w-3.5" />
-                <h3 className="text-xs font-bold text-foreground">SSRF-Protected Security Architecture</h3>
+                <h3 className="text-xs font-bold text-foreground">
+                  SSRF-Protected Security Architecture
+                </h3>
               </div>
               <p className="text-[11px] text-muted-foreground leading-relaxed">
                 DNS resolution validation, private network blocking (RFC 1918), and strict connection timeouts on all external crawler requests prevent unauthorized internal network access.
@@ -271,36 +332,41 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* Section 5: Active Content Projects */}
-        <section aria-labelledby="section-workspace" className="space-y-4">
+        {/* Section 5: Workspace Content Documents */}
+        <section aria-labelledby="section-documents" className="space-y-4">
           <Card className="border-border bg-card">
             <CardHeader className="p-5 border-b border-border">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 id="section-workspace" className="text-sm font-bold uppercase tracking-wider text-foreground">
-                    Workspace Content Documents
+                  <h2
+                    id="section-documents"
+                    className="text-sm font-bold uppercase tracking-wider text-foreground"
+                  >
+                    Workspace Content Documents &amp; Guidelines
                   </h2>
                   <CardDescription className="text-xs">
-                    Active content projects managed in this workspace
+                    Editorial optimization standards and publishing guidelines
                   </CardDescription>
                 </div>
                 <Badge variant="success">Rank Math Guideline Matched</Badge>
               </div>
             </CardHeader>
             <CardContent className="p-6">
-              <div className="text-center py-8 space-y-3">
+              <div className="text-center py-6 space-y-3">
                 <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
                   <FileText className="h-6 w-6" />
                 </div>
                 <div className="space-y-1">
-                  <h3 className="text-sm font-semibold text-foreground">No content documents yet</h3>
-                  <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                    Create and optimize your first SEO article using the Content Analyzer writing workspace.
+                  <h3 className="text-sm font-semibold text-foreground">
+                    Active Content Writing Workspace
+                  </h3>
+                  <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                    Write, inspect, and optimize your article directly in the primary workspace above, or open the focused full-screen writer.
                   </p>
                 </div>
                 <Link href="/analyzer">
                   <Button size="sm" className="mt-2 text-xs font-semibold shadow-sm">
-                    Create New Article
+                    Open Dedicated Editor View
                   </Button>
                 </Link>
               </div>

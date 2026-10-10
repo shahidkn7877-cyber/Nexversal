@@ -152,9 +152,9 @@ export function SeoChecklist({
 
                       <div className="space-y-1 flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <h5 className="font-semibold text-slate-800 dark:text-slate-200 leading-snug">
+                          <span className="font-semibold text-slate-800 dark:text-slate-200 leading-snug">
                             {item.title}
-                          </h5>
+                          </span>
                           <div className="flex items-center gap-1.5 shrink-0">
                             <Badge
                               variant={badgeVariant}

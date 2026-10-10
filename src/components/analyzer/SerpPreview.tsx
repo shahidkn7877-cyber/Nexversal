@@ -43,10 +43,10 @@ export function SerpPreview({
     <div className="p-5 rounded-2xl border border-border bg-card shadow-sm space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-border">
         <div>
-          <h3 className="font-bold text-sm text-foreground flex items-center gap-2">
+          <div className="font-bold text-sm text-foreground flex items-center gap-2">
             <Globe className="h-4 w-4 text-brand-600 dark:text-brand-400" />
             <span>Search Engine Result Simulator (Google SERP)</span>
-          </h3>
+          </div>
           <p className="text-xs text-muted-foreground">
             Preview how your webpage appears in desktop and mobile search rankings
           </p>
@@ -180,9 +180,9 @@ export function SerpPreview({
             </div>
           </div>
 
-          <h4 className="text-base sm:text-lg font-medium text-blue-700 dark:text-blue-400 hover:underline cursor-pointer leading-snug break-words">
+          <div className="text-base sm:text-lg font-medium text-blue-700 dark:text-blue-400 hover:underline cursor-pointer leading-snug break-words">
             {metaTitle || "Your Optimized Page Title Will Appear Here"}
-          </h4>
+          </div>
 
           <p className="mt-1 text-xs text-slate-600 dark:text-slate-300 leading-relaxed break-words line-clamp-3">
             {metaDescription ||

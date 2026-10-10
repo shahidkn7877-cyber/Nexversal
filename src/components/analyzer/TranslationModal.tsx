@@ -43,9 +43,9 @@ export function TranslationModal({
         <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-2">
             <Languages className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+            <div className="text-sm font-bold text-slate-900 dark:text-slate-100">
               Translate Article
-            </h3>
+            </div>
           </div>
           <button
             type="button"

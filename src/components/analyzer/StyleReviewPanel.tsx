@@ -34,9 +34,9 @@ export function StyleReviewPanel({
         <div>
           <div className="flex items-center gap-1.5">
             <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-            <h3 className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
+            <div className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
               Writing Style Review
-            </h3>
+            </div>
           </div>
           <p className="text-[11px] text-slate-500 mt-0.5">
             Evaluates repetitive rhythm, filler phrases, and sentence cadence
