@@ -1,107 +1,103 @@
+"use client";
+
 import React from "react";
 import { ContentMetrics } from "@/types/content";
 import {
   FileText,
   Clock,
-  Mic,
-  AlignLeft,
+  Target,
   Percent,
-  Sparkles,
+  Type,
+  AlertCircle,
 } from "lucide-react";
 
 interface ContentStatsProps {
   metrics: ContentMetrics;
   score?: number | null;
   scoreCategory?: 'Strong' | 'Needs Improvement' | 'Weak' | null;
+  longParagraphsCount?: number;
+  className?: string;
 }
 
 export function ContentStats({
   metrics,
   score = null,
   scoreCategory = null,
+  longParagraphsCount = 0,
+  className = "",
 }: ContentStatsProps) {
-  const statItems = [
-    {
-      label: "SEO Score",
-      value: score !== null ? `${score}/100` : "0/100",
-      subtext:
-        score !== null
-          ? (scoreCategory || (score >= 80 ? "Strong" : score >= 50 ? "Needs Improvement" : "Weak"))
-          : "Paste or write article",
-      icon: Sparkles,
-      color: "text-brand-600 dark:text-brand-400",
-      bg: "bg-brand-500/10",
-    },
-    {
-      label: "Word Count",
-      value: metrics.wordCount.toLocaleString(),
-      subtext: `${metrics.charCount.toLocaleString()} characters`,
-      icon: FileText,
-      color: "text-blue-600 dark:text-blue-400",
-      bg: "bg-blue-500/10",
-    },
-    {
-      label: "Keyword Density",
-      value: `${metrics.keywordDensity}%`,
-      subtext: `${metrics.keywordCount} matches`,
-      icon: Percent,
-      color: "text-emerald-600 dark:text-emerald-400",
-      bg: "bg-emerald-500/10",
-    },
-    {
-      label: "Paragraphs",
-      value: metrics.paragraphCount.toString(),
-      subtext: `${metrics.sentenceCount} sentences`,
-      icon: AlignLeft,
-      color: "text-purple-600 dark:text-purple-400",
-      bg: "bg-purple-500/10",
-    },
-    {
-      label: "Reading Time",
-      value: `~${metrics.readingTimeMinutes} min`,
-      subtext: "Based on 200 WPM",
-      icon: Clock,
-      color: "text-amber-600 dark:text-amber-400",
-      bg: "bg-amber-500/10",
-    },
-    {
-      label: "Speaking Time",
-      value: `~${metrics.speakingTimeMinutes} min`,
-      subtext: "Based on 130 WPM",
-      icon: Mic,
-      color: "text-rose-600 dark:text-rose-400",
-      bg: "bg-rose-500/10",
-    },
-  ];
-
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-      {statItems.map((item, idx) => {
-        const Icon = item.icon;
-        return (
+    <div
+      className={`flex flex-wrap items-center gap-x-5 gap-y-2 py-2 px-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs text-xs text-slate-600 dark:text-slate-400 ${className}`}
+    >
+      {/* Word Count */}
+      <div className="flex items-center gap-1.5" title="Total words in article">
+        <FileText className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+        <span className="font-bold text-slate-900 dark:text-slate-100">
+          {metrics.wordCount.toLocaleString()}
+        </span>
+        <span className="text-slate-500">words</span>
+      </div>
+
+      <div className="h-3 w-px bg-slate-200 dark:bg-slate-700 hidden sm:block" />
+
+      {/* Character Count */}
+      <div className="flex items-center gap-1.5" title="Total characters">
+        <Type className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
+        <span className="font-bold text-slate-900 dark:text-slate-100">
+          {metrics.charCount.toLocaleString()}
+        </span>
+        <span className="text-slate-500">chars</span>
+      </div>
+
+      <div className="h-3 w-px bg-slate-200 dark:bg-slate-700 hidden sm:block" />
+
+      {/* Reading Time */}
+      <div className="flex items-center gap-1.5" title="Estimated reading time at 200 words per minute">
+        <Clock className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
+        <span className="font-bold text-slate-900 dark:text-slate-100">
+          ~{metrics.readingTimeMinutes} min
+        </span>
+        <span className="text-slate-500">read</span>
+      </div>
+
+      <div className="h-3 w-px bg-slate-200 dark:bg-slate-700 hidden sm:block" />
+
+      {/* Focus Keyword Occurrences */}
+      <div className="flex items-center gap-1.5" title="Number of times focus keyword appears in body">
+        <Target className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+        <span className="font-bold text-slate-900 dark:text-slate-100">
+          {metrics.keywordCount}
+        </span>
+        <span className="text-slate-500">
+          {metrics.keywordCount === 1 ? "occurrence" : "occurrences"}
+        </span>
+      </div>
+
+      <div className="h-3 w-px bg-slate-200 dark:bg-slate-700 hidden sm:block" />
+
+      {/* Keyword Density */}
+      <div className="flex items-center gap-1.5" title="Target keyword frequency relative to total words (optimal: 1.0% - 2.5%)">
+        <Percent className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+        <span className="font-bold text-slate-900 dark:text-slate-100">
+          {metrics.keywordDensity}%
+        </span>
+        <span className="text-slate-500">density</span>
+      </div>
+
+      {/* Mobile Scannability Alert Tag if any */}
+      {longParagraphsCount > 0 && (
+        <>
+          <div className="h-3 w-px bg-slate-200 dark:bg-slate-700 hidden sm:block" />
           <div
-            key={idx}
-            className="p-3.5 rounded-2xl border border-border bg-card shadow-sm space-y-1 transition-all"
+            className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400 font-semibold"
+            title={`${longParagraphsCount} paragraph(s) exceed 80 words`}
           >
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground truncate">
-                {item.label}
-              </span>
-              <div
-                className={`flex h-6 w-6 items-center justify-center rounded-lg ${item.bg} ${item.color}`}
-              >
-                <Icon className="h-3.5 w-3.5" />
-              </div>
-            </div>
-            <div className="text-lg font-extrabold text-foreground truncate">
-              {item.value}
-            </div>
-            <p className="text-[10px] text-muted-foreground truncate">
-              {item.subtext}
-            </p>
+            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+            <span>{longParagraphsCount} long {longParagraphsCount === 1 ? 'paragraph' : 'paragraphs'} (&gt;80 words)</span>
           </div>
-        );
-      })}
+        </>
+      )}
     </div>
   );
 }
