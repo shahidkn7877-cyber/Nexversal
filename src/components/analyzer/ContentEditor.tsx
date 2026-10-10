@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { EditorViewMode } from '@/types/app';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +22,10 @@ import {
   Sparkles,
   AlertTriangle,
   HelpCircle,
+  Download,
+  FileText,
+  ChevronDown,
+  Loader2,
 } from 'lucide-react';
 import { extractHeadings } from '@/lib/markdown-parser';
 
@@ -45,6 +49,8 @@ interface ContentEditorProps {
   language?: string;
   metaDescription?: string;
   slug?: string;
+  onExportArticle?: (format: 'pdf' | 'docx') => void;
+  isExporting?: boolean;
 }
 
 export function ContentEditor({
@@ -63,7 +69,10 @@ export function ContentEditor({
   language = 'en-US',
   metaDescription = '',
   slug = '',
+  onExportArticle,
+  isExporting = false,
 }: ContentEditorProps) {
+  const [showExportMenu, setShowExportMenu] = useState(false);
   const isRtl = useMemo(() => isRtlLanguage(language), [language]);
 
   // Extract structured headings in real-time
@@ -151,6 +160,63 @@ export function ContentEditor({
 
         {/* Right Actions */}
         <div className="flex items-center gap-1.5 ml-auto">
+          {/* Download / Export Article Control */}
+          <div className="relative">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!content.trim() || isExporting}
+              onClick={() => setShowExportMenu((prev) => !prev)}
+              className="h-7 text-xs font-semibold gap-1 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
+              title={content.trim() ? 'Download article as PDF or Word document' : 'Write or paste content to download'}
+            >
+              {isExporting ? (
+                <Loader2 className="h-3 w-3 animate-spin text-blue-600" />
+              ) : (
+                <Download className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+              )}
+              <span className="hidden sm:inline">{isExporting ? 'Exporting...' : 'Download Article'}</span>
+              <span className="sm:hidden">Export</span>
+              <ChevronDown className="h-2.5 w-2.5 opacity-60" />
+            </Button>
+
+            {showExportMenu && (
+              <div className="absolute right-0 top-full mt-1.5 w-52 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl z-50 py-1.5 text-xs animate-in fade-in zoom-in-95">
+                <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 dark:border-slate-800 mb-1">
+                  Export Document
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowExportMenu(false);
+                    onExportArticle?.('pdf');
+                  }}
+                  className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-medium flex items-center justify-between transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-rose-500" />
+                    <span>Download as PDF</span>
+                  </div>
+                  <Badge variant="muted" className="text-[10px]">.pdf</Badge>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowExportMenu(false);
+                    onExportArticle?.('docx');
+                  }}
+                  className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-medium flex items-center justify-between transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <FileCode className="h-4 w-4 text-blue-600" />
+                    <span>Download as Word</span>
+                  </div>
+                  <Badge variant="muted" className="text-[10px]">.docx</Badge>
+                </button>
+              </div>
+            )}
+          </div>
+
           {hasUndo && onUndo && (
             <Button
               size="sm"

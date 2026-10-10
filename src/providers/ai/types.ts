@@ -76,8 +76,18 @@ export interface ContentImprovementResponse {
   };
 }
 
+export interface ProviderTestResult {
+  ok: boolean;
+  testResult: 'READY' | 'INVALID_KEY' | 'UNREACHABLE' | 'RATE_LIMITED' | 'FAILED_UNCONFIGURED' | 'ERROR';
+  message: string;
+  latencyMs?: number;
+  model?: string;
+  recommendation?: string;
+}
+
 export interface IAiProviderAdapter {
   readonly metadata: AiProviderMetadata;
   isAvailable(): boolean;
   execute(request: ContentImprovementRequest): Promise<ContentImprovementResponse>;
+  testConnection?(): Promise<ProviderTestResult>;
 }

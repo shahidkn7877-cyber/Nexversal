@@ -18,6 +18,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useEditor } from '@/hooks/useEditor';
+import { downloadArticleDocument } from '@/lib/export-client';
 import {
   Download,
   Copy,
@@ -29,6 +30,9 @@ import {
   Undo2,
   RefreshCw,
   Feather,
+  FileText,
+  FileCode,
+  Loader2,
 } from 'lucide-react';
 
 export interface ContentAnalyzerWorkspaceProps {
@@ -74,6 +78,36 @@ export function ContentAnalyzerWorkspace({
   const [copied, setCopied] = useState(false);
   const [showDialectMenu, setShowDialectMenu] = useState(false);
   const [showTranslateModal, setShowTranslateModal] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  const handleExportArticle = React.useCallback(
+    async (format: 'pdf' | 'docx') => {
+      if (!doc.content.trim()) {
+        setExportError('Cannot export an empty article. Please write or paste content first.');
+        return;
+      }
+      setIsExporting(true);
+      setExportError(null);
+      try {
+        const res = await downloadArticleDocument({
+          title: doc.title,
+          content: doc.content,
+          format,
+          focusKeyword: doc.focusKeyword,
+          metaDescription: doc.metaDescription,
+        });
+        if (!res.success && res.error) {
+          setExportError(res.error);
+        }
+      } catch {
+        setExportError('An unexpected error occurred while generating the document export.');
+      } finally {
+        setIsExporting(false);
+      }
+    },
+    [doc.title, doc.content, doc.focusKeyword, doc.metaDescription]
+  );
 
   const handleSyncSlug = () => {
     if (doc.focusKeyword.trim()) {
@@ -240,6 +274,8 @@ export function ContentAnalyzerWorkspace({
             language={doc.language}
             metaDescription={doc.metaDescription}
             slug={doc.slug}
+            onExportArticle={handleExportArticle}
+            isExporting={isExporting}
           />
         </div>
 
@@ -541,9 +577,43 @@ export function ContentAnalyzerWorkspace({
                 </CardHeader>
                 <CardContent className="p-4 space-y-3">
                   <p className="text-xs text-slate-500 leading-relaxed">
-                    Export your optimized article directly to clean Markdown or HTML for WordPress, Ghost, Substack, Webflow, or custom CMS:
+                    Download your edited article in publication-ready document formats, or export directly to clean Markdown and HTML:
                   </p>
                   <div className="flex flex-col gap-2 pt-1">
+                    {/* PDF Document Download */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={!doc.content.trim() || isExporting}
+                      onClick={() => handleExportArticle('pdf')}
+                      className="text-xs justify-start gap-2 h-9 font-medium border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
+                    >
+                      {isExporting ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-rose-500" />
+                      ) : (
+                        <FileText className="h-4 w-4 text-rose-500" />
+                      )}
+                      <span>Download Formatted PDF (.pdf)</span>
+                    </Button>
+
+                    {/* Word Document Download */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={!doc.content.trim() || isExporting}
+                      onClick={() => handleExportArticle('docx')}
+                      className="text-xs justify-start gap-2 h-9 font-medium border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
+                    >
+                      {isExporting ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                      ) : (
+                        <FileCode className="h-4 w-4 text-blue-600" />
+                      )}
+                      <span>Download Microsoft Word (.docx)</span>
+                    </Button>
+
+                    <div className="border-t border-slate-100 dark:border-slate-800 my-1" />
+
                     <Button
                       variant="outline"
                       size="sm"
@@ -563,10 +633,16 @@ export function ContentAnalyzerWorkspace({
                       onClick={handleExportHtml}
                       className="text-xs justify-start gap-2 h-9 font-medium"
                     >
-                      <Download className="h-4 w-4 text-blue-600" />
+                      <Download className="h-4 w-4 text-emerald-600" />
                       <span>Download Clean HTML Document</span>
                     </Button>
                   </div>
+
+                  {exportError && (
+                    <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-200/50 dark:border-rose-900/40 text-[11px] text-rose-800 dark:text-rose-300">
+                      {exportError}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}

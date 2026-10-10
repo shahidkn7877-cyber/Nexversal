@@ -72,8 +72,8 @@ export async function POST(req: NextRequest) {
         {
           success: false,
           error: {
-            code: 'AI_UNAVAILABLE',
-            message: 'AI improvements are currently unavailable.',
+            code: response.error?.code || 'AI_UNAVAILABLE',
+            message: response.error?.message || 'Translation service is currently unavailable.',
           },
         },
         { status: 200 }

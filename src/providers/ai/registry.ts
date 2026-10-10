@@ -1,4 +1,5 @@
 import { AiProviderMetadata, IAiProviderAdapter, ProviderId } from './types';
+import { GroqProviderAdapter } from './adapters/groq.adapter';
 import { GeminiProviderAdapter } from './adapters/gemini.adapter';
 import { OpenAiProviderAdapter } from './adapters/openai.adapter';
 import { ClaudeProviderAdapter } from './adapters/claude.adapter';
@@ -13,11 +14,13 @@ export class AiProviderRegistry {
   }
 
   private registerDefaultAdapters() {
-    this.register(new OllamaProviderAdapter());
+    // Register adapters with primary cloud speedster (Groq) first
+    this.register(new GroqProviderAdapter());
     this.register(new GeminiProviderAdapter());
     this.register(new OpenAiProviderAdapter());
     this.register(new ClaudeProviderAdapter());
     this.register(new DeepSeekProviderAdapter());
+    this.register(new OllamaProviderAdapter());
   }
 
   public register(adapter: IAiProviderAdapter): void {
@@ -45,8 +48,8 @@ export class AiProviderRegistry {
     if (available.length > 0) {
       return available[0];
     }
-    // Return first registered provider as default
-    return this.get('ollama') || this.get('gemini');
+    // Return Groq as primary default if registered, or Gemini
+    return this.get('groq') || this.get('gemini') || this.get('ollama');
   }
 }
 

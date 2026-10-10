@@ -25,11 +25,31 @@ export async function POST(
     );
   }
 
-  const isAvailable = adapter.isAvailable();
   const envVarName = adapter.metadata.envKeyRequired;
-  const isEnvPresent = Boolean(process.env[envVarName]);
+  const isEnvPresent = Boolean(process.env[envVarName]?.trim());
 
-  if (!isAvailable || !isEnvPresent) {
+  // Perform active connectivity check if adapter implements testConnection
+  if (adapter.testConnection) {
+    const testRes = await adapter.testConnection();
+    return NextResponse.json({
+      success: testRes.ok,
+      data: {
+        providerId,
+        providerName: adapter.metadata.name,
+        status: adapter.metadata.status,
+        envKeyRequired: envVarName,
+        serverEnvDetected: isEnvPresent,
+        testResult: testRes.testResult,
+        message: testRes.message,
+        latencyMs: testRes.latencyMs,
+        model: testRes.model,
+        recommendation: testRes.recommendation,
+      },
+    });
+  }
+
+  // Fallback environment presence check
+  if (!adapter.isAvailable() || !isEnvPresent) {
     return NextResponse.json({
       success: false,
       data: {
@@ -39,8 +59,8 @@ export async function POST(
         envKeyRequired: envVarName,
         serverEnvDetected: false,
         testResult: 'FAILED_UNCONFIGURED',
-        message: `Provider "${adapter.metadata.name}" is currently inactive. Server environment variable "${envVarName}" is missing in the server environment.`,
-        recommendation: `Set ${envVarName}=<your_api_key> in .env.local and restart the server to activate.`,
+        message: `Provider "${adapter.metadata.name}" is currently inactive. Server environment variable "${envVarName}" is missing.`,
+        recommendation: `Set ${envVarName}=<your_api_key> in .env and restart the server to activate.`,
       },
     });
   }
@@ -54,7 +74,7 @@ export async function POST(
       envKeyRequired: envVarName,
       serverEnvDetected: true,
       testResult: 'READY',
-      message: `Provider "${adapter.metadata.name}" environment credentials are detected and ready for service calls.`,
+      message: `Provider "${adapter.metadata.name}" credentials detected and ready.`,
     },
   });
 }

@@ -60,8 +60,10 @@ export async function POST(req: NextRequest) {
             action: response.action,
           },
           error: {
-            code: 'AI_UNAVAILABLE',
-            message: 'AI improvements are currently unavailable.',
+            code: response.error?.code || 'AI_UNAVAILABLE',
+            message: response.error?.message || 'AI improvements are currently unavailable.',
+            requiresConfiguration: response.error?.requiresConfiguration ?? false,
+            configuredProviders: response.error?.configuredProviders ?? [],
           },
         },
         { status: 200 }
