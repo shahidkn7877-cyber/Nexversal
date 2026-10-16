@@ -179,6 +179,16 @@ STRICT TRANSLATION REQUIREMENTS:
     } else if (request.action === 'targeted_rewrite') {
       systemPrompt = `You are a concise editorial stylist. Rewrite ONLY the specified passage to improve flow, eliminate fluff, and make it sound natural and engaging. Return ONLY the rewritten passage text without quotes or explanation.`;
       userPrompt = `Passage to rewrite:\n"${request.targetPassage || request.content}"\n\nStyle improvement goal:\n${request.styleFinding || 'Improve natural rhythm and clarity'}`;
+    } else if (request.action === 'one_click_fix') {
+      systemPrompt = `You are an expert editorial proofreader and SEO content specialist. Perform a comprehensive 1-click editorial and SEO fix on the article.
+STRICT EDITORIAL REQUIREMENTS:
+1. Fix all spelling errors, typos, punctuation mistakes, capitalization, and grammatical flaws.
+2. Improve clarity, concise phrasing, and sentence rhythm while removing unnecessary filler and fluff.
+3. Clean up formatting: ensure proper paragraph breaks, logical heading structure (#, ##, ###), lists, and spacing.
+4. PRESERVE all links ([text](url)), citations, facts, quotes, code, and key technical terms without inventing claims.
+${request.focusKeyword ? `5. Ensure natural placement of the primary focus keyword "${request.focusKeyword}".` : ''}
+6. Return ONLY the fully polished, corrected article in clean Markdown format without conversational greetings or code fence wrappers.`;
+      userPrompt = `Article to fix and polish:\n\n${request.content}`;
     } else if (request.action === 'improve_title') {
       systemPrompt = `You are a search engine optimization and headline specialist. Craft a high-CTR, compelling article headline under 60 characters that includes the keyword if provided. Return ONLY the title text.`;
       userPrompt = `Keyword: ${request.focusKeyword || 'General'}\nCurrent title or topic: ${request.content.slice(0, 300)}`;

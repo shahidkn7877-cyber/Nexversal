@@ -4,9 +4,9 @@ import { useState, useMemo, useCallback } from 'react';
 import { SeoDocument, ContentMetrics } from '@/types/content';
 import { EditorViewMode, AnalyzerTabKey } from '@/types/app';
 import { contentAnalyzerService } from '@/services/content-analyzer.service';
-import { editorActionsService } from '@/services/editor-actions.service';
+import { editorActionsService, DialectDetectionResult } from '@/services/editor-actions.service';
 import { ContentAnalysisResult } from '@/types/analyzer';
-import { StyleReviewResult, StyleFinding } from '@/services/style-review.service';
+import { StyleReviewResult, StyleFinding, styleReviewService } from '@/services/style-review.service';
 
 export interface PendingProposal {
   title: string;
@@ -107,6 +107,7 @@ export function useEditor(initialDoc?: Partial<SeoDocument>) {
   const [previousDoc, setPreviousDoc] = useState<SeoDocument | null>(null);
 
   // AI & Async State
+  const [isFixing, setIsFixing] = useState(false);
   const [isHumanizing, setIsHumanizing] = useState(false);
   const [humanizeError, setHumanizeError] = useState<string | null>(null);
 
@@ -116,6 +117,11 @@ export function useEditor(initialDoc?: Partial<SeoDocument>) {
   const [styleReviewResult, setStyleReviewResult] = useState<StyleReviewResult | null>(null);
   const [isStyleReviewing, setIsStyleReviewing] = useState(false);
   const [rewritingFindingId, setRewritingFindingId] = useState<string | null>(null);
+
+  // Dialect detection for US vs UK English
+  const dialectResult: DialectDetectionResult = useMemo(() => {
+    return editorActionsService.detectDialect(doc.content);
+  }, [doc.content]);
 
   const clearContent = useCallback(() => {
     setDoc({
@@ -132,7 +138,56 @@ export function useEditor(initialDoc?: Partial<SeoDocument>) {
     setStyleReviewResult(null);
   }, []);
 
-  const triggerOneClickFix = useCallback(() => {
+  // 1-Click Fix: Hybrid AI-first with robust deterministic SEO & grammar rules fallback
+  const triggerOneClickFix = useCallback(async () => {
+    if (!doc.content.trim()) return;
+    setIsFixing(true);
+
+    try {
+      // 1. Attempt AI comprehensive editorial polish if provider is configured
+      const res = await fetch('/api/v1/content/improve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: doc.content,
+          action: 'one_click_fix',
+          focusKeyword: doc.focusKeyword || undefined,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (data.success && data.data?.result?.improved) {
+        const ruleFix = editorActionsService.oneClickSeoFix({
+          content: doc.content,
+          focusKeyword: doc.focusKeyword,
+          title: doc.title,
+          slug: doc.slug,
+        });
+
+        setPendingProposal({
+          title: '1-Click Comprehensive Polish & SEO Proposal',
+          originalContent: doc.content,
+          proposedContent: data.data.result.improved,
+          changes: [
+            'Fixed spelling, grammar, punctuation, and capitalization across entire text',
+            'Refined sentence clarity and rhythm while removing wordy fluff',
+            'Preserved all Markdown headings, links, quotes, and target keywords',
+            ...(ruleFix.proposedTitle !== doc.title ? [`Optimized title: "${ruleFix.proposedTitle}"`] : []),
+          ],
+          proposedDocFields: {
+            title: ruleFix.proposedTitle,
+            slug: ruleFix.proposedSlug,
+          },
+        });
+        return;
+      }
+    } catch {
+      // Fall through to deterministic rules engine
+    } finally {
+      setIsFixing(false);
+    }
+
+    // 2. Fallback: Instant deterministic on-page SEO & formatting fix
     const result = editorActionsService.oneClickSeoFix({
       content: doc.content,
       focusKeyword: doc.focusKeyword,
@@ -140,7 +195,7 @@ export function useEditor(initialDoc?: Partial<SeoDocument>) {
       slug: doc.slug,
     });
     setPendingProposal({
-      title: '1-Click SEO Fix Proposal',
+      title: '1-Click SEO & Formatting Fix Proposal',
       originalContent: doc.content,
       proposedContent: result.proposedContent,
       changes: result.changes,
@@ -155,6 +210,7 @@ export function useEditor(initialDoc?: Partial<SeoDocument>) {
     const result = editorActionsService.autoHeadings({
       content: doc.content,
       focusKeyword: doc.focusKeyword,
+      title: doc.title,
     });
     setPendingProposal({
       title: 'Auto Headings Proposal',
@@ -162,7 +218,7 @@ export function useEditor(initialDoc?: Partial<SeoDocument>) {
       proposedContent: result.proposedContent,
       changes: result.generatedHeadings.map((h) => `Added heading: ${h}`),
     });
-  }, [doc.content, doc.focusKeyword]);
+  }, [doc.content, doc.focusKeyword, doc.title]);
 
   // Deterministic local humanizer (instant fallback)
   const triggerHumanizeTone = useCallback(() => {
@@ -179,7 +235,7 @@ export function useEditor(initialDoc?: Partial<SeoDocument>) {
     });
   }, [doc.content]);
 
-  // Real AI Humanize Tone (calls configured provider)
+  // Real AI Humanize Tone (calls configured provider with rules fallback)
   const triggerAiHumanizeTone = useCallback(async () => {
     if (!doc.content.trim()) return;
     setIsHumanizing(true);
@@ -196,7 +252,7 @@ export function useEditor(initialDoc?: Partial<SeoDocument>) {
         }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (data.success && data.data?.result?.improved) {
         setPendingProposal({
           title: 'AI Humanized Tone Proposal',
@@ -208,7 +264,7 @@ export function useEditor(initialDoc?: Partial<SeoDocument>) {
           ],
         });
       } else {
-        // Fall back to rule-based humanizer or report limitation
+        // Fall back to rule-based humanizer
         const fallback = editorActionsService.humanizeTone({ content: doc.content });
         if (fallback.replacedCount > 0) {
           setPendingProposal({
@@ -220,20 +276,35 @@ export function useEditor(initialDoc?: Partial<SeoDocument>) {
             ),
           });
         } else {
-          setHumanizeError(data.error?.message || 'AI improvements are currently unavailable.');
+          setHumanizeError(
+            data.error?.message ||
+              'No formulaic clichés found. Your content already reads naturally.'
+          );
         }
       }
     } catch {
-      setHumanizeError('AI improvements are currently unavailable.');
+      const fallback = editorActionsService.humanizeTone({ content: doc.content });
+      if (fallback.replacedCount > 0) {
+        setPendingProposal({
+          title: 'Humanize Tone (Rules Engine Proposal)',
+          originalContent: doc.content,
+          proposedContent: fallback.proposedContent,
+          changes: fallback.replacements.map(
+            (r) => `Replaced "${r.original}" with "${r.replacement}"`
+          ),
+        });
+      } else {
+        setHumanizeError('No formulaic clichés found. Your content already reads naturally.');
+      }
     } finally {
       setIsHumanizing(false);
     }
   }, [doc.content, doc.focusKeyword]);
 
-  // Translation Workflow
+  // Translation Workflow (returns boolean success state)
   const triggerTranslation = useCallback(
-    async (targetLang: string, sourceLang: string = 'auto') => {
-      if (!doc.content.trim()) return;
+    async (targetLang: string, sourceLang: string = 'auto'): Promise<boolean> => {
+      if (!doc.content.trim()) return false;
       setIsTranslating(true);
       setTranslationError(null);
 
@@ -249,7 +320,7 @@ export function useEditor(initialDoc?: Partial<SeoDocument>) {
           }),
         });
 
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         if (data.success && data.data?.result?.improved) {
           setPendingProposal({
             title: `Article Translation (${targetLang}) Proposal`,
@@ -263,11 +334,14 @@ export function useEditor(initialDoc?: Partial<SeoDocument>) {
               language: targetLang,
             },
           });
+          return true;
         } else {
           setTranslationError(data.error?.message || 'AI improvements are currently unavailable.');
+          return false;
         }
       } catch {
         setTranslationError('AI improvements are currently unavailable.');
+        return false;
       } finally {
         setIsTranslating(false);
       }
@@ -275,7 +349,7 @@ export function useEditor(initialDoc?: Partial<SeoDocument>) {
     [doc.content, doc.focusKeyword]
   );
 
-  // Writing Style Review Workflow
+  // Writing Style Review Workflow with local fallback
   const triggerStyleReview = useCallback(async () => {
     if (!doc.content.trim()) return;
     setIsStyleReviewing(true);
@@ -287,19 +361,25 @@ export function useEditor(initialDoc?: Partial<SeoDocument>) {
         body: JSON.stringify({ content: doc.content }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (data.success && data.data) {
         setStyleReviewResult(data.data);
         setActiveTab('style_review');
+        return;
       }
     } catch {
-      // Ignored
+      // Fallback below
     } finally {
       setIsStyleReviewing(false);
     }
+
+    // Instant local fallback analysis
+    const localResult = styleReviewService.analyzeStyle(doc.content);
+    setStyleReviewResult(localResult);
+    setActiveTab('style_review');
   }, [doc.content]);
 
-  // Targeted Rewrite Loop for Specific Passage
+  // Targeted Rewrite Loop for Specific Passage with Fallback
   const triggerTargetedRewrite = useCallback(
     async (finding: StyleFinding) => {
       setRewritingFindingId(finding.id);
@@ -316,8 +396,15 @@ export function useEditor(initialDoc?: Partial<SeoDocument>) {
           }),
         });
 
-        const data = await res.json();
-        if (data.success && data.data?.result?.improved) {
+        const data = await res.json().catch(() => ({}));
+        let rewrittenPassage =
+          data.success && data.data?.result?.improved ? data.data.result.improved : null;
+
+        if (!rewrittenPassage) {
+          rewrittenPassage = styleReviewService.generateFallbackRewrite(finding);
+        }
+
+        if (rewrittenPassage) {
           setStyleReviewResult((prev) => {
             if (!prev) return null;
             return {
@@ -327,7 +414,7 @@ export function useEditor(initialDoc?: Partial<SeoDocument>) {
                   ? {
                       ...f,
                       status: 'rewritten',
-                      rewrittenPassage: data.data.result.improved,
+                      rewrittenPassage,
                     }
                   : f
               ),
@@ -335,7 +422,24 @@ export function useEditor(initialDoc?: Partial<SeoDocument>) {
           });
         }
       } catch {
-        // Ignored
+        const fallback = styleReviewService.generateFallbackRewrite(finding);
+        if (fallback) {
+          setStyleReviewResult((prev) => {
+            if (!prev) return null;
+            return {
+              ...prev,
+              findings: prev.findings.map((f) =>
+                f.id === finding.id
+                  ? {
+                      ...f,
+                      status: 'rewritten',
+                      rewrittenPassage: fallback,
+                    }
+                  : f
+              ),
+            };
+          });
+        }
       } finally {
         setRewritingFindingId(null);
       }
@@ -348,8 +452,18 @@ export function useEditor(initialDoc?: Partial<SeoDocument>) {
       if (!finding.rewrittenPassage) return;
       setPreviousDoc({ ...doc });
 
-      // Replace passage in canonical content
-      const updatedContent = doc.content.replace(finding.passage, finding.rewrittenPassage);
+      // Robust passage replacement in canonical content
+      let updatedContent = doc.content;
+      if (updatedContent.includes(finding.passage)) {
+        updatedContent = updatedContent.replace(finding.passage, finding.rewrittenPassage);
+      } else {
+        const escaped = finding.passage.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
+        const rx = new RegExp(escaped, 'i');
+        if (rx.test(updatedContent)) {
+          updatedContent = updatedContent.replace(rx, finding.rewrittenPassage);
+        }
+      }
+
       setDoc((prev) => ({ ...prev, content: updatedContent }));
 
       setStyleReviewResult((prev) => {
@@ -428,6 +542,7 @@ export function useEditor(initialDoc?: Partial<SeoDocument>) {
     pendingProposal,
     hasUndo: Boolean(previousDoc),
     triggerOneClickFix,
+    isFixing,
     triggerAutoHeadings,
     triggerHumanizeTone,
     triggerAiHumanizeTone,
@@ -444,6 +559,7 @@ export function useEditor(initialDoc?: Partial<SeoDocument>) {
     rejectStyleFinding,
     rewritingFindingId,
     triggerDialectAdapt,
+    dialectResult,
     acceptProposal,
     rejectProposal,
     undoLastAction,

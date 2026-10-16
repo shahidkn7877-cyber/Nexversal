@@ -55,6 +55,7 @@ export function ContentAnalyzerWorkspace({
     pendingProposal,
     hasUndo,
     triggerOneClickFix,
+    isFixing,
     triggerAutoHeadings,
     triggerAiHumanizeTone,
     isHumanizing,
@@ -70,6 +71,7 @@ export function ContentAnalyzerWorkspace({
     rejectStyleFinding,
     rewritingFindingId,
     triggerDialectAdapt,
+    dialectResult,
     acceptProposal,
     rejectProposal,
     undoLastAction,
@@ -365,17 +367,17 @@ export function ContentAnalyzerWorkspace({
             </div>
 
             <div className="grid grid-cols-2 gap-2 pt-1">
-              {/* 1-Click SEO Fix */}
+              {/* 1-Click Comprehensive Fix */}
               <Button
                 size="sm"
                 variant="default"
                 onClick={triggerOneClickFix}
-                disabled={!doc.content.trim()}
+                disabled={!doc.content.trim() || isFixing}
                 className="text-xs font-bold gap-1.5 h-9 bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
-                title="Automated on-page SEO fix proposal"
+                title="Automated comprehensive editorial and on-page SEO fix"
               >
-                <Wand2 className="h-3.5 w-3.5" />
-                <span>1-Click Fix</span>
+                <Wand2 className={`h-3.5 w-3.5 ${isFixing ? 'animate-spin' : ''}`} />
+                <span>{isFixing ? 'Fixing...' : '1-Click Fix'}</span>
               </Button>
 
               {/* Real AI Humanize Tone */}
@@ -453,19 +455,33 @@ export function ContentAnalyzerWorkspace({
                 </Button>
 
                 {showDialectMenu && (
-                  <div className="absolute right-0 bottom-full mb-1 w-48 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg z-30 py-1 text-xs">
+                  <div className="absolute right-0 bottom-full mb-1 w-64 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl z-30 p-2 text-xs space-y-1">
+                    <div className="px-2 py-1 border-b border-slate-100 dark:border-slate-800 pb-1.5 flex items-center justify-between">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Current Dialect</span>
+                      <span className="text-[10px] font-semibold text-slate-700 dark:text-slate-300">
+                        {dialectResult.detected === 'US'
+                          ? '🇺🇸 American'
+                          : dialectResult.detected === 'UK'
+                          ? '🇬🇧 British'
+                          : dialectResult.detected === 'mixed'
+                          ? '⚡ Mixed US/UK'
+                          : 'Neutral'}
+                      </span>
+                    </div>
                     <button
                       type="button"
                       onClick={() => {
                         triggerDialectAdapt('UK');
                         setShowDialectMenu(false);
                       }}
-                      className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-medium flex items-center justify-between"
+                      className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-medium flex items-center justify-between transition-colors"
                     >
                       <span>🇬🇧 Convert to UK English</span>
-                      <Badge variant="muted" className="text-[10px]">
-                        British
-                      </Badge>
+                      {dialectResult.recommendedTarget === 'UK' && (
+                        <Badge variant="muted" className="text-[9px] bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50">
+                          Recommended
+                        </Badge>
+                      )}
                     </button>
                     <button
                       type="button"
@@ -473,12 +489,14 @@ export function ContentAnalyzerWorkspace({
                         triggerDialectAdapt('US');
                         setShowDialectMenu(false);
                       }}
-                      className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-medium flex items-center justify-between"
+                      className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-medium flex items-center justify-between transition-colors"
                     >
                       <span>🇺🇸 Convert to US English</span>
-                      <Badge variant="muted" className="text-[10px]">
-                        American
-                      </Badge>
+                      {dialectResult.recommendedTarget === 'US' && (
+                        <Badge variant="muted" className="text-[9px] bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50">
+                          Recommended
+                        </Badge>
+                      )}
                     </button>
                   </div>
                 )}
@@ -655,8 +673,10 @@ export function ContentAnalyzerWorkspace({
         isOpen={showTranslateModal}
         onClose={() => setShowTranslateModal(false)}
         onTranslate={async (sourceLang, targetLang) => {
-          await triggerTranslation(targetLang, sourceLang);
-          setShowTranslateModal(false);
+          const ok = await triggerTranslation(targetLang, sourceLang);
+          if (ok) {
+            setShowTranslateModal(false);
+          }
         }}
         currentLanguage={doc.language}
         isTranslating={isTranslating}

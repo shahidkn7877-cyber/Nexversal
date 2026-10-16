@@ -12,6 +12,7 @@ export const improvementActionEnum = z.enum([
   'humanize_tone',
   'translate',
   'targeted_rewrite',
+  'one_click_fix',
 ]);
 
 export const desiredToneEnum = z.enum([

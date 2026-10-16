@@ -148,6 +148,14 @@ Article:\n${request.content}`;
       prompt = `Translate the following article faithfully into ${targetLang}. Preserve all Markdown headings, lists, tables, and links. Return ONLY the translated article text.\n\nArticle:\n${request.content}`;
     } else if (request.action === 'targeted_rewrite') {
       prompt = `Rewrite only this passage to sound natural and engaging. Return ONLY the rewritten passage.\n\nPassage:\n"${request.targetPassage || request.content}"`;
+    } else if (request.action === 'one_click_fix') {
+      prompt = `You are an expert editorial proofreader and SEO content specialist. Perform a comprehensive 1-click editorial and SEO fix on the article.
+Fix all spelling errors, typos, punctuation, capitalization, and grammatical flaws.
+Improve clarity, concise phrasing, and sentence rhythm while removing filler and fluff.
+Clean up formatting: ensure proper paragraph breaks, logical heading structure (#, ##, ###), lists, and spacing.
+PRESERVE all links ([text](url)), citations, facts, quotes, code, and key technical terms.
+${request.focusKeyword ? `Ensure natural placement of the primary focus keyword "${request.focusKeyword}".` : ''}
+Return ONLY the fully polished, corrected article in clean Markdown format without commentary or code fences.\n\nArticle:\n${request.content}`;
     }
 
     try {

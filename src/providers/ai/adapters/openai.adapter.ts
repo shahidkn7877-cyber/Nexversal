@@ -138,6 +138,10 @@ export class OpenAiProviderAdapter extends BaseAiProviderAdapter {
     } else if (request.action === 'translate') {
       systemPrompt = `Translate the article faithfully into ${request.targetLanguage || 'English'}. Preserve all Markdown headings, lists, tables, and links. Return ONLY the translated article.`;
       userPrompt = request.content;
+    } else if (request.action === 'one_click_fix') {
+      systemPrompt =
+        'You are an expert editorial proofreader and SEO content specialist. Perform a comprehensive 1-click editorial and SEO fix on the article. Fix spelling, typos, punctuation, and grammar. Improve clarity, concise phrasing, and flow. Clean up formatting, paragraph breaks, and headings (#, ##, ###). Preserve all links, facts, quotes, code, and keywords. Return ONLY the polished Markdown article.';
+      userPrompt = `Article:\n\n${request.content}`;
     }
 
     try {

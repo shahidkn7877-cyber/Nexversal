@@ -41,7 +41,8 @@ export type ImprovementAction =
   | 'generate_suggestions'
   | 'humanize_tone'
   | 'translate'
-  | 'targeted_rewrite';
+  | 'targeted_rewrite'
+  | 'one_click_fix';
 
 export interface ContentImprovementRequest {
   content: string;

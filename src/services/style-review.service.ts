@@ -213,6 +213,103 @@ export class StyleReviewService {
       findings: uniqueFindings,
     };
   }
+
+  /**
+   * Deterministically rewrites a flagged passage based on the finding's issueType,
+   * providing an immediate high-quality proposal even when external AI is offline.
+   */
+  public generateFallbackRewrite(finding: StyleFinding): string {
+    const passage = finding.passage.trim();
+    if (!passage) return passage;
+
+    if (finding.issueType === 'cliche_filler') {
+      let rewritten = passage;
+      for (const item of CLICHE_PHRASES) {
+        const regex = new RegExp(`\\b${item.phrase.replace(/'/g, "['’]")}\\b`, 'gi');
+        if (regex.test(rewritten)) {
+          if (item.phrase === 'delve into') {
+            rewritten = rewritten.replace(regex, 'explore');
+          } else if (item.phrase === 'it is important to remember') {
+            rewritten = rewritten.replace(regex, 'remember');
+          } else if (item.phrase.includes("today's digital landscape")) {
+            rewritten = rewritten.replace(regex, 'today');
+          } else if (item.phrase.includes("today's fast-paced")) {
+            rewritten = rewritten.replace(regex, 'modern');
+          } else if (item.phrase === 'serves as a testament to') {
+            rewritten = rewritten.replace(regex, 'demonstrates');
+          } else if (item.phrase === 'plays a pivotal role') {
+            rewritten = rewritten.replace(regex, 'is essential');
+          } else if (item.phrase === 'in order to') {
+            rewritten = rewritten.replace(regex, 'to');
+          } else if (item.phrase === 'due to the fact that') {
+            rewritten = rewritten.replace(regex, 'because');
+          } else if (item.phrase === 'has the capability to') {
+            rewritten = rewritten.replace(regex, 'can');
+          } else if (item.phrase === 'needless to say') {
+            rewritten = rewritten.replace(regex, 'clearly');
+          }
+        }
+      }
+      rewritten = rewritten.replace(/\s{2,}/g, ' ').replace(/\s+([.,;:!?])/g, '$1');
+      rewritten = rewritten.charAt(0).toUpperCase() + rewritten.slice(1);
+      return rewritten;
+    }
+
+    if (finding.issueType === 'repeated_opening') {
+      const sentences = passage.split(/(?<=[.!?])\s+/).filter(Boolean);
+      if (sentences.length >= 2) {
+        const s1 = sentences[0];
+        let s2 = sentences[1];
+        const words = s2.split(/\s+/);
+        if (words.length >= 2) {
+          s2 = `Additionally, ${s2.charAt(0).toLowerCase() + s2.slice(1)}`;
+          return `${s1} ${s2}`;
+        }
+      }
+      return passage;
+    }
+
+    if (finding.issueType === 'repetitive_transition') {
+      const m = passage.match(/^([A-Za-z]+),?\s+(.+)$/);
+      if (m) {
+        const word = m[1].toLowerCase();
+        const rest = m[2];
+        let replacement = 'In addition,';
+        if (word === 'furthermore') replacement = 'Additionally,';
+        else if (word === 'moreover') replacement = 'Also,';
+        else if (word === 'additionally') replacement = 'Furthermore,';
+        return `${replacement} ${rest}`;
+      }
+      return passage;
+    }
+
+    if (finding.issueType === 'overlong_sentence') {
+      const words = passage.split(/\s+/);
+      if (words.length > 25) {
+        const midpoint = Math.floor(words.length / 2);
+        let splitIdx = -1;
+        for (let i = Math.max(0, midpoint - 6); i <= midpoint + 6 && i < words.length; i++) {
+          const w = words[i].toLowerCase().replace(/[^a-z]/g, '');
+          if (['and', 'but', 'while', 'because', 'which', 'although'].includes(w)) {
+            splitIdx = i;
+            break;
+          }
+        }
+        if (splitIdx !== -1) {
+          const firstPart = words.slice(0, splitIdx).join(' ').replace(/[,;]$/, '');
+          const secondWords = words.slice(splitIdx + 1);
+          let secondPart = secondWords.join(' ');
+          if (secondPart.length > 0) {
+            secondPart = secondPart.charAt(0).toUpperCase() + secondPart.slice(1);
+          }
+          return `${firstPart}. ${secondPart}`;
+        }
+      }
+      return passage;
+    }
+
+    return passage;
+  }
 }
 
 export const styleReviewService = new StyleReviewService();
