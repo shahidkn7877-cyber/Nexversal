@@ -22,6 +22,16 @@ export class AiService {
     }
 
     if (!targetAdapter) {
+      const defaultEnv = process.env.DEFAULT_AI_PROVIDER?.trim().toLowerCase();
+      if (defaultEnv) {
+        const preferred = this.registry.get(defaultEnv);
+        if (preferred && preferred.isAvailable()) {
+          targetAdapter = preferred;
+        }
+      }
+    }
+
+    if (!targetAdapter) {
       const available = this.registry.getAvailable();
       if (available.length > 0) {
         targetAdapter = available[0];

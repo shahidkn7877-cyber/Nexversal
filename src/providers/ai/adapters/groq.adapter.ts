@@ -3,14 +3,32 @@ import {
   AiProviderMetadata,
   ContentImprovementRequest,
   ContentImprovementResponse,
+  ProviderStatus,
   ProviderTestResult,
 } from '../types';
 
 export class GroqProviderAdapter extends BaseAiProviderAdapter {
   public get metadata(): AiProviderMetadata {
-    const isConfigured = Boolean(
-      process.env.GROQ_API_KEY && process.env.GROQ_API_KEY.trim().length > 0
-    );
+    const apiKey = process.env.GROQ_API_KEY?.trim();
+    const baseUrl = process.env.GROQ_BASE_URL || 'https://api.groq.com/openai/v1';
+    const isStandardGroq = baseUrl.includes('api.groq.com');
+    const hasKey = Boolean(apiKey && apiKey.length > 0);
+    const isFormatValid = Boolean(apiKey && (!isStandardGroq || apiKey.startsWith('gsk_')));
+
+    let status: ProviderStatus = 'NOT_CONFIGURED';
+    let statusReason = 'GROQ_API_KEY environment variable is not set.';
+
+    if (hasKey) {
+      if (isFormatValid) {
+        status = 'AVAILABLE';
+        statusReason = 'Groq API key configured in server environment.';
+      } else {
+        status = 'ERROR';
+        statusReason = apiKey?.startsWith('sk-or-')
+          ? 'GROQ_API_KEY contains an OpenRouter key (starts with "sk-or-"). Groq Cloud requires an API key starting with "gsk_" from console.groq.com/keys.'
+          : 'GROQ_API_KEY is improperly formatted. Groq Cloud keys start with "gsk_".';
+      }
+    }
 
     return {
       id: 'groq',
@@ -31,12 +49,10 @@ export class GroqProviderAdapter extends BaseAiProviderAdapter {
         'style_review',
         'targeted_rewrite',
       ],
-      status: isConfigured ? 'AVAILABLE' : 'NOT_CONFIGURED',
-      statusReason: isConfigured
-        ? 'Groq API key configured in server environment.'
-        : 'GROQ_API_KEY environment variable is not set.',
+      status,
+      statusReason,
       envKeyRequired: 'GROQ_API_KEY',
-      isConfigured,
+      isConfigured: hasKey && isFormatValid,
     };
   }
 
@@ -55,8 +71,22 @@ export class GroqProviderAdapter extends BaseAiProviderAdapter {
       };
     }
 
-    const startTime = Date.now();
     const baseUrl = process.env.GROQ_BASE_URL || 'https://api.groq.com/openai/v1';
+    const isStandardGroq = baseUrl.includes('api.groq.com');
+
+    if (isStandardGroq && !apiKey.startsWith('gsk_')) {
+      const isOrKey = apiKey.startsWith('sk-or-');
+      return {
+        ok: false,
+        testResult: 'INVALID_KEY',
+        message: isOrKey
+          ? 'The configured GROQ_API_KEY is an OpenRouter key (starts with "sk-or-"). Groq Cloud requires an API key starting with "gsk_".'
+          : 'The configured GROQ_API_KEY format is invalid. Groq Cloud keys must start with "gsk_".',
+        recommendation: 'Obtain an official Groq API key from https://console.groq.com/keys and update GROQ_API_KEY in your .env file.',
+      };
+    }
+
+    const startTime = Date.now();
 
     try {
       const controller = new AbortController();
@@ -81,6 +111,16 @@ export class GroqProviderAdapter extends BaseAiProviderAdapter {
           message: 'Groq rejected the API key as invalid or revoked.',
           latencyMs,
           recommendation: 'Check and update GROQ_API_KEY at console.groq.com/keys.',
+        };
+      }
+
+      if (res.status === 403) {
+        return {
+          ok: false,
+          testResult: 'INVALID_KEY',
+          message: 'Groq rejected the request (HTTP 403 Forbidden). Check account permissions.',
+          latencyMs,
+          recommendation: 'Verify your Groq account status and project permissions at console.groq.com.',
         };
       }
 
@@ -116,15 +156,19 @@ export class GroqProviderAdapter extends BaseAiProviderAdapter {
     } catch (err: unknown) {
       const isTimeout =
         err instanceof Error &&
-        (err.name === 'AbortError' || err.message.toLowerCase().includes('aborted'));
+        (err.name === 'AbortError' ||
+          err.name === 'TimeoutError' ||
+          /aborted|timed?\s*out/i.test(err.message));
       return {
         ok: false,
         testResult: 'UNREACHABLE',
         message: isTimeout
           ? 'Groq API request timed out after 12 seconds.'
-          : 'Could not establish connection to Groq API endpoint.',
+          : 'Could not connect to Groq API. Please verify network access and provider status.',
         latencyMs: Date.now() - startTime,
-        recommendation: 'Check server outbound internet connectivity and proxy settings.',
+        recommendation: isTimeout
+          ? 'Try again or check if Groq API is experiencing latency.'
+          : 'Check server outbound internet connectivity and proxy settings.',
       };
     }
   }
@@ -149,6 +193,26 @@ export class GroqProviderAdapter extends BaseAiProviderAdapter {
     }
 
     const baseUrl = process.env.GROQ_BASE_URL || 'https://api.groq.com/openai/v1';
+    const isStandardGroq = baseUrl.includes('api.groq.com');
+
+    if (isStandardGroq && !apiKey.startsWith('gsk_')) {
+      const isOrKey = apiKey.startsWith('sk-or-');
+      return {
+        success: false,
+        action: request.action,
+        providerId: this.metadata.id,
+        providerStatus: 'ERROR',
+        error: {
+          code: 'INVALID_API_KEY',
+          message: isOrKey
+            ? 'The configured GROQ_API_KEY is an OpenRouter key (starts with "sk-or-"). Groq Cloud requires an API key starting with "gsk_" from https://console.groq.com/keys.'
+            : 'Groq API key format is invalid. Groq Cloud keys must start with "gsk_". Please verify GROQ_API_KEY in your server environment.',
+          requiresConfiguration: true,
+          configuredProviders: [this.metadata.name],
+        },
+      };
+    }
+
     const model = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
 
     let systemPrompt =
@@ -168,7 +232,10 @@ ${request.focusKeyword ? `5. PRESERVE the primary focus keyword "${request.focus
       userPrompt = `Article to humanize:\n\n${request.content}`;
     } else if (request.action === 'translate') {
       const targetLang = request.targetLanguage || 'English';
-      const sourceLang = request.sourceLanguage && request.sourceLanguage !== 'auto' ? ` from ${request.sourceLanguage}` : '';
+      const sourceLang =
+        request.sourceLanguage && request.sourceLanguage !== 'auto'
+          ? ` from ${request.sourceLanguage}`
+          : '';
       systemPrompt = `You are a professional literary, technical, and multilingual translator. Translate the provided article faithfully${sourceLang} into ${targetLang}.
 STRICT TRANSLATION REQUIREMENTS:
 1. Preserve all Markdown elements: headings (#, ##, ###), lists, links ([text](url)), tables, and formatting bold/italics.
@@ -189,37 +256,73 @@ STRICT EDITORIAL REQUIREMENTS:
 ${request.focusKeyword ? `5. Ensure natural placement of the primary focus keyword "${request.focusKeyword}".` : ''}
 6. Return ONLY the fully polished, corrected article in clean Markdown format without conversational greetings or code fence wrappers.`;
       userPrompt = `Article to fix and polish:\n\n${request.content}`;
+    } else if (request.action === 'improve_headings') {
+      systemPrompt = `You are a structural content editor and SEO specialist. Organize and structure the provided article with clear, logical Markdown headings (# H1 for main title, ## H2 for key sections, ### H3 for subsections). Preserve all original content, facts, bullet points, and links. Return ONLY the restructured Markdown content without code fence wrappers.`;
+      userPrompt = `Article to structure with headings:\n\n${request.content}`;
     } else if (request.action === 'improve_title') {
       systemPrompt = `You are a search engine optimization and headline specialist. Craft a high-CTR, compelling article headline under 60 characters that includes the keyword if provided. Return ONLY the title text.`;
       userPrompt = `Keyword: ${request.focusKeyword || 'General'}\nCurrent title or topic: ${request.content.slice(0, 300)}`;
     } else if (request.action === 'improve_meta_description') {
       systemPrompt = `You are an SEO copywriter. Write a compelling, click-worthy meta description between 140 and 158 characters that includes the target keyword and an enticing call-to-action. Return ONLY the meta description text.`;
       userPrompt = `Keyword: ${request.focusKeyword || ''}\nArticle snippet: ${request.content.slice(0, 500)}`;
+    } else if (request.action === 'improve_readability') {
+      systemPrompt = `You are an editorial writing coach. Enhance readability and sentence flow of the provided content. Break overly long sentences into punchy, clear prose while preserving all information, Markdown structure, and keywords. Return ONLY the improved Markdown content.`;
+      userPrompt = `Article to improve readability:\n\n${request.content}`;
     }
 
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 35000);
+      const maxRetries = 1;
+      const retryDelayMs = 1500;
+      let res: Response | null = null;
+      let lastErr: unknown = null;
 
-      const res = await fetch(`${baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt },
-          ],
-          temperature: request.action === 'humanize_tone' ? 0.7 : 0.3,
-          max_tokens: 4096,
-        }),
-        signal: controller.signal,
-      });
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        if (attempt > 0) {
+          await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+        }
 
-      clearTimeout(timeoutId);
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 35000);
+
+          const currentRes = await fetch(`${baseUrl}/chat/completions`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model,
+              messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt },
+              ],
+              temperature: request.action === 'humanize_tone' ? 0.7 : 0.3,
+              max_tokens: 4096,
+            }),
+            signal: controller.signal,
+          });
+
+          clearTimeout(timeoutId);
+
+          // Retry once on transient rate limit or 503
+          if (
+            (currentRes.status === 429 || currentRes.status === 503) &&
+            attempt < maxRetries
+          ) {
+            continue;
+          }
+
+          res = currentRes;
+          break;
+        } catch (fetchErr) {
+          throw fetchErr;
+        }
+      }
+
+      if (!res) {
+        throw lastErr || new Error('Connection failed');
+      }
 
       if (res.status === 401) {
         return {
@@ -229,8 +332,40 @@ ${request.focusKeyword ? `5. Ensure natural placement of the primary focus keywo
           providerStatus: 'ERROR',
           error: {
             code: 'INVALID_API_KEY',
-            message: 'Groq API key is invalid or revoked. Please verify GROQ_API_KEY in your server environment.',
+            message:
+              'Groq API key is invalid or revoked. Please verify GROQ_API_KEY in your server environment.',
             requiresConfiguration: true,
+            configuredProviders: [this.metadata.name],
+          },
+        };
+      }
+
+      if (res.status === 403) {
+        return {
+          success: false,
+          action: request.action,
+          providerId: this.metadata.id,
+          providerStatus: 'ERROR',
+          error: {
+            code: 'AI_PROVIDER_ERROR',
+            message:
+              'Groq API request was forbidden (HTTP 403). Check account permissions.',
+            requiresConfiguration: false,
+            configuredProviders: [this.metadata.name],
+          },
+        };
+      }
+
+      if (res.status === 404) {
+        return {
+          success: false,
+          action: request.action,
+          providerId: this.metadata.id,
+          providerStatus: 'ERROR',
+          error: {
+            code: 'AI_PROVIDER_ERROR',
+            message: `Groq model '${model}' was not found (HTTP 404). Please verify GROQ_MODEL in your server environment.`,
+            requiresConfiguration: false,
             configuredProviders: [this.metadata.name],
           },
         };
@@ -244,7 +379,8 @@ ${request.focusKeyword ? `5. Ensure natural placement of the primary focus keywo
           providerStatus: 'ERROR',
           error: {
             code: 'RATE_LIMIT_EXCEEDED',
-            message: 'Groq rate limit reached. Please wait a moment before trying again.',
+            message:
+              'Groq rate limit reached. Please wait a moment before trying again.',
             requiresConfiguration: false,
             configuredProviders: [this.metadata.name],
           },
@@ -298,6 +434,10 @@ ${request.focusKeyword ? `5. Ensure natural placement of the primary focus keywo
         explanation = `Translated article into ${request.targetLanguage || 'target language'} using ${model}.`;
       } else if (request.action === 'targeted_rewrite') {
         explanation = `Refined passage style using ${model}.`;
+      } else if (request.action === 'one_click_fix') {
+        explanation = `Completed 1-click comprehensive editorial and SEO polish using ${model}.`;
+      } else if (request.action === 'improve_headings') {
+        explanation = `Restructured content hierarchy with optimized headings using ${model}.`;
       }
 
       return {
@@ -314,7 +454,9 @@ ${request.focusKeyword ? `5. Ensure natural placement of the primary focus keywo
     } catch (err: unknown) {
       const isTimeout =
         err instanceof Error &&
-        (err.name === 'AbortError' || err.message.toLowerCase().includes('aborted'));
+        (err.name === 'AbortError' ||
+          err.name === 'TimeoutError' ||
+          /aborted|timed?\s*out/i.test(err.message));
 
       return {
         success: false,
